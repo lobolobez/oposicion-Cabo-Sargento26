@@ -18,15 +18,13 @@ const ADMIN_PASSWORD = "S3p€i_Adm!n_2o26#Lob";
 
 // Lista de parques SEPEI
 const PARQUES_SEPEI = [
-    "Parque de Albacete",
     "Parque de Hellín",
     "Parque de Villarrobledo",
     "Parque de Almansa",
     "Parque de La Roda",
     "Parque de Casas Ibáñez",
     "Parque de Alcaraz",
-    "Parque de Molinicos",
-    "Otro"
+    "Parque de Molinicos"
 ];
 
 // Variables globales
@@ -168,13 +166,6 @@ function showRegistrationForm() {
                         </select>
                     </div>
                     
-                    <div class="form-group" id="otro-parque-group" style="display:none;">
-                        <label for="reg-otro-parque">
-                            <i class="fas fa-edit"></i> Especifica el parque
-                        </label>
-                        <input type="text" id="reg-otro-parque" placeholder="Nombre del parque">
-                    </div>
-                    
                     <button type="submit" class="btn-register">
                         <i class="fas fa-paper-plane"></i> Solicitar Acceso
                     </button>
@@ -191,12 +182,6 @@ function showRegistrationForm() {
     
     addRegistrationStyles();
     document.body.insertAdjacentHTML('beforeend', formHTML);
-    
-    document.getElementById('reg-parque').addEventListener('change', function() {
-        const otroGroup = document.getElementById('otro-parque-group');
-        otroGroup.style.display = this.value === 'Otro' ? 'block' : 'none';
-        document.getElementById('reg-otro-parque').required = this.value === 'Otro';
-    });
 }
 
 function showPendingScreen(userData) {
@@ -272,11 +257,7 @@ function submitRegistration(event) {
     const name = document.getElementById('reg-name').value.trim();
     const phone = document.getElementById('reg-phone').value.trim().replace(/\s/g, '');
     const email = document.getElementById('reg-email').value.trim().toLowerCase();
-    let parque = document.getElementById('reg-parque').value;
-    
-    if (parque === 'Otro') {
-        parque = document.getElementById('reg-otro-parque').value.trim();
-    }
+    const parque = document.getElementById('reg-parque').value;
     
     const visitorId = 'user_' + phone + '_' + Date.now().toString(36);
     
