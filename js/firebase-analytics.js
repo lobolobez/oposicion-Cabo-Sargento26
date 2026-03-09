@@ -31,18 +31,25 @@ const PARQUES_SEPEI = [
 let database = null;
 let isAdmin = false;
 let currentUser = null;
+let adminLoginShown = false; // Nueva flag para evitar mostrar registro si estamos en modo admin
 
 // ============================================
 // INICIALIZACIÓN
 // ============================================
 
 function initFirebase() {
+    console.log("=== INIT FIREBASE ===");
+    console.log("URL:", window.location.href);
+    
     // PRIMERO: Verificar si quiere acceder como admin
     const urlParams = new URLSearchParams(window.location.search);
     const wantsAdmin = urlParams.has('admin');
     
+    console.log("wantsAdmin:", wantsAdmin);
+    
     if (wantsAdmin) {
-        console.log("Solicitud de acceso admin detectada");
+        console.log("Solicitud de acceso admin detectada - mostrando login admin");
+        adminLoginShown = true;
         showAdminLoginForm();
         return; // No continuar con el flujo normal
     }
@@ -289,6 +296,13 @@ function checkUserRegistration() {
 // ============================================
 
 function showRegistrationForm() {
+    // Si estamos en modo admin, no mostrar el formulario de registro
+    if (adminLoginShown || isAdmin) {
+        console.log("showRegistrationForm cancelado - modo admin activo");
+        return;
+    }
+    
+    console.log("Mostrando formulario de registro");
     document.getElementById('home-screen').style.display = 'none';
     
     const formHTML = `
