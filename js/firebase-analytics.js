@@ -14,7 +14,7 @@ const firebaseConfig = {
 };
 
 // Contraseña para acceder al panel admin
-const ADMIN_PASSWORD = "sepei2026admin";
+const ADMIN_PASSWORD = "S3p€i_Adm!n_2o26#Lob";
 
 // Variables globales
 let database = null;
