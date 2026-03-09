@@ -312,13 +312,21 @@ function selectPracticeAnswer(answerIndex, question) {
     const stats = AppState.stats[AppState.currentCategory];
     stats.answered.add(originalIndex);
     
-    if (answerIndex === question.correct) {
+    const isCorrect = answerIndex === question.correct;
+    
+    if (isCorrect) {
         stats.correct++;
     } else {
         stats.incorrect++;
     }
     
     saveStats();
+    
+    // Actualizar estadísticas del usuario en Firebase
+    if (typeof updateUserStats === 'function') {
+        updateUserStats(isCorrect ? 1 : 0, 1);
+    }
+    
     renderPracticeQuestion();
     updatePracticeProgress();
 }
@@ -628,6 +636,11 @@ function submitExam() {
         blank: blank
     });
     saveStats();
+    
+    // Actualizar estadísticas del usuario en Firebase
+    if (typeof updateUserStats === 'function') {
+        updateUserStats(correct, correct + incorrect + blank);
+    }
     
     // Mostrar resultados
     document.getElementById('results-category').textContent = 

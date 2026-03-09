@@ -501,11 +501,19 @@ function allowAccess() {
     if (overlay) overlay.remove();
 }
 
+// Variable para tracking de tiempo
+let sessionStartTime = null;
+let timeTrackingInterval = null;
+
 function updateUserActivity(userId) {
     if (!database) return;
     
     const now = new Date();
     const today = now.toISOString().split('T')[0];
+    
+    // Iniciar tracking de tiempo de sesión
+    sessionStartTime = Date.now();
+    startTimeTracking(userId);
     
     database.ref('registeredUsers/' + userId).update({
         lastVisit: now.toISOString(),
@@ -514,6 +522,49 @@ function updateUserActivity(userId) {
     
     database.ref('stats/totalVisits').transaction(count => (count || 0) + 1);
     database.ref('stats/dailyUsers/' + today + '/' + userId).set(true);
+}
+
+function startTimeTracking(userId) {
+    // Actualizar tiempo cada minuto
+    timeTrackingInterval = setInterval(() => {
+        if (sessionStartTime && database) {
+            const minutesSpent = Math.floor((Date.now() - sessionStartTime) / 60000);
+            if (minutesSpent > 0) {
+                database.ref('registeredUsers/' + userId + '/totalMinutes').transaction(mins => (mins || 0) + 1);
+            }
+        }
+    }, 60000); // Cada minuto
+    
+    // Guardar tiempo al cerrar/recargar la página
+    window.addEventListener('beforeunload', () => {
+        if (sessionStartTime && database) {
+            const minutesSpent = Math.floor((Date.now() - sessionStartTime) / 60000);
+            if (minutesSpent > 0) {
+                // Usar sendBeacon para enviar datos antes de cerrar
+                const userId = localStorage.getItem('sepei_user_id');
+                if (userId) {
+                    database.ref('registeredUsers/' + userId + '/totalMinutes').transaction(mins => (mins || 0) + minutesSpent);
+                }
+            }
+        }
+    });
+}
+
+// Función para actualizar estadísticas de aciertos del usuario
+function updateUserStats(correct, total) {
+    if (!database) return;
+    
+    const userId = localStorage.getItem('sepei_user_id');
+    if (!userId) return;
+    
+    database.ref('registeredUsers/' + userId).transaction(userData => {
+        if (!userData) return userData;
+        
+        userData.totalAnswered = (userData.totalAnswered || 0) + total;
+        userData.totalCorrect = (userData.totalCorrect || 0) + correct;
+        
+        return userData;
+    });
 }
 
 function updateUserCategory(category) {
@@ -668,6 +719,14 @@ function showAdminPanel() {
         .badge-rejected { background: #e74c3c; color: #fff; }
         .badge-cabo { background: #e74c3c; color: #fff; }
         .badge-sargento { background: #27ae60; color: #fff; }
+        .stat-percent {
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        .stat-percent.good { background: #27ae60; color: white; }
+        .stat-percent.medium { background: #f39c12; color: #000; }
+        .stat-percent.low { background: #e74c3c; color: white; }
         .action-btn {
             padding: 6px 12px;
             border: none;
@@ -889,11 +948,11 @@ function renderUserList(containerId, users, type) {
                 <tr>
                     <th>Nombre</th>
                     <th>Teléfono</th>
-                    <th>Email</th>
                     <th>Parque</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
                     <th>Estudiando</th>
+                    <th>Tiempo</th>
+                    <th>Aciertos</th>
+                    <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -908,6 +967,20 @@ function renderUserList(containerId, users, type) {
         
         const categoryBadge = user.category === 'cabo' ? '<span class="badge badge-cabo">Cabo</span>' :
                              user.category === 'sargento' ? '<span class="badge badge-sargento">Sargento</span>' : '-';
+        
+        // Calcular tiempo de uso
+        const totalMinutes = user.totalMinutes || 0;
+        const hours = Math.floor(totalMinutes / 60);
+        const mins = totalMinutes % 60;
+        const timeDisplay = totalMinutes > 0 ? `${hours}h ${mins}m` : '-';
+        
+        // Calcular porcentaje de aciertos
+        const totalAnswered = user.totalAnswered || 0;
+        const totalCorrect = user.totalCorrect || 0;
+        const percentage = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+        const percentageDisplay = totalAnswered > 0 
+            ? `<span class="stat-percent ${percentage >= 70 ? 'good' : percentage >= 50 ? 'medium' : 'low'}">${percentage}%</span> <small>(${totalCorrect}/${totalAnswered})</small>` 
+            : '-';
         
         let actions = '';
         if (user.status === 'pending') {
@@ -938,13 +1011,13 @@ function renderUserList(containerId, users, type) {
         
         tableHTML += `
             <tr>
-                <td><strong>${user.name || '-'}</strong></td>
-                <td>${user.phone || '-'}</td>
+                <td><strong>${user.name || '-'}</strong><br><small style="color:#888;">${user.phone || ''}</small></td>
                 <td style="font-size:11px;">${user.email || '-'}</td>
                 <td style="font-size:11px;">${user.parque || '-'}</td>
-                <td>${date}</td>
-                <td>${statusBadge}</td>
                 <td>${categoryBadge}</td>
+                <td><i class="fas fa-clock" style="color:#3498db;"></i> ${timeDisplay}</td>
+                <td>${percentageDisplay}</td>
+                <td>${statusBadge}</td>
                 <td>${actions}</td>
             </tr>
         `;
