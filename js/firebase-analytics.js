@@ -73,6 +73,8 @@ function checkAdminAccess() {
     
     if (adminKey === ADMIN_PASSWORD) {
         isAdmin = true;
+        // Dar acceso completo al admin
+        document.body.classList.add('authorized');
         setTimeout(showAdminPanel, 500);
     }
 }
@@ -311,8 +313,17 @@ function submitRegistration(event) {
 // ============================================
 
 function allowAccess() {
-    document.getElementById('home-screen').style.display = 'block';
+    // Añadir clase authorized al body para mostrar la app
+    document.body.classList.add('authorized');
     
+    // Mostrar pantalla principal
+    const homeScreen = document.getElementById('home-screen');
+    if (homeScreen) {
+        homeScreen.style.display = 'block';
+        homeScreen.classList.add('active');
+    }
+    
+    // Remover overlay si existe
     const overlay = document.getElementById('registration-overlay');
     if (overlay) overlay.remove();
 }

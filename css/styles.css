@@ -3,6 +3,26 @@
    Estilos principales
    ============================================ */
 
+/* BLOQUEO: Ocultar toda la app hasta verificar registro */
+#home-screen,
+#mode-screen,
+#practice-screen,
+#exam-screen,
+#results-screen,
+#review-screen {
+    display: none !important;
+}
+
+/* Clase para mostrar cuando esté autorizado */
+body.authorized #home-screen.active,
+body.authorized #mode-screen.active,
+body.authorized #practice-screen.active,
+body.authorized #exam-screen.active,
+body.authorized #results-screen.active,
+body.authorized #review-screen.active {
+    display: block !important;
+}
+
 /* Variables CSS */
 :root {
     --primary-color: #c41e3a;
