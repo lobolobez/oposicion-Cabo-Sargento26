@@ -228,6 +228,37 @@ body {
     color: var(--success-color);
 }
 
+/* Aviso / Disclaimer */
+.disclaimer-box {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border: 1px solid #f39c12;
+    border-left: 4px solid #f39c12;
+    border-radius: var(--radius-md);
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.disclaimer-box i {
+    color: #e67e22;
+    font-size: 1.3rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.disclaimer-box p {
+    margin: 0;
+    color: #856404;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.disclaimer-box strong {
+    color: #7d5a00;
+}
+
 /* Estadísticas */
 .stats-summary {
     background: var(--card-bg);
