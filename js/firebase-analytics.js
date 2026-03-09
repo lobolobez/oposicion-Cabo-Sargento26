@@ -1,5 +1,5 @@
 // ============================================
-// FIREBASE ANALYTICS - TRACKING DE USUARIOS
+// FIREBASE - SISTEMA DE REGISTRO Y ADMIN
 // ============================================
 
 // Configuración de Firebase
@@ -16,22 +16,40 @@ const firebaseConfig = {
 // Contraseña para acceder al panel admin
 const ADMIN_PASSWORD = "S3p€i_Adm!n_2o26#Lob";
 
+// Lista de parques SEPEI
+const PARQUES_SEPEI = [
+    "Parque Central - Albacete",
+    "Parque de Hellín",
+    "Parque de Villarrobledo",
+    "Parque de Almansa",
+    "Parque de La Roda",
+    "Parque de Casas Ibáñez",
+    "Parque de Alcaraz",
+    "Parque de Caudete",
+    "Otro"
+];
+
 // Variables globales
 let database = null;
 let isAdmin = false;
+let currentUser = null;
 
-// Inicializar Firebase
+// ============================================
+// INICIALIZACIÓN
+// ============================================
+
 function initFirebase() {
     try {
-        // Inicializar app
         firebase.initializeApp(firebaseConfig);
         database = firebase.database();
         
         // Verificar si es admin
         checkAdminAccess();
         
-        // Registrar usuario
-        registerUser();
+        // Si no es admin, verificar registro
+        if (!isAdmin) {
+            checkUserRegistration();
+        }
         
         console.log("Firebase inicializado correctamente");
     } catch (error) {
@@ -39,314 +57,924 @@ function initFirebase() {
     }
 }
 
-// Verificar acceso admin
+// ============================================
+// VERIFICACIÓN DE ACCESO
+// ============================================
+
 function checkAdminAccess() {
     const urlParams = new URLSearchParams(window.location.search);
     const adminKey = urlParams.get('admin');
     
     if (adminKey === ADMIN_PASSWORD) {
         isAdmin = true;
-        setTimeout(showAdminPanel, 1000); // Esperar a que cargue la página
+        setTimeout(showAdminPanel, 500);
     }
 }
 
-// Generar ID único para el usuario
-function getUserId() {
-    let visitorId = localStorage.getItem('sepei_visitor_id');
+function checkUserRegistration() {
+    const userId = localStorage.getItem('sepei_user_id');
     
-    if (!visitorId) {
-        visitorId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('sepei_visitor_id', visitorId);
+    if (!userId) {
+        showRegistrationForm();
+        return;
     }
     
-    return visitorId;
+    database.ref('registeredUsers/' + userId).once('value', snapshot => {
+        const userData = snapshot.val();
+        
+        if (!userData) {
+            localStorage.removeItem('sepei_user_id');
+            showRegistrationForm();
+            return;
+        }
+        
+        if (userData.status === 'pending') {
+            showPendingScreen(userData);
+        } else if (userData.status === 'approved') {
+            currentUser = userData;
+            allowAccess();
+            updateUserActivity(userId);
+        } else if (userData.status === 'rejected') {
+            showRejectedScreen();
+        }
+    });
 }
 
-// Registrar usuario en Firebase
-function registerUser() {
-    if (!database) return;
+// ============================================
+// PANTALLAS DE REGISTRO
+// ============================================
+
+function showRegistrationForm() {
+    document.getElementById('home-screen').style.display = 'none';
     
-    const visitorId = getUserId();
-    const now = new Date();
-    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const formHTML = `
+        <div class="registration-overlay" id="registration-overlay">
+            <div class="registration-container">
+                <div class="registration-header">
+                    <i class="fas fa-fire-extinguisher"></i>
+                    <h1>SEPEI</h1>
+                    <p>Registro de Acceso</p>
+                </div>
+                
+                <form id="registration-form" onsubmit="submitRegistration(event)">
+                    <div class="form-group">
+                        <label for="reg-name">
+                            <i class="fas fa-user"></i> Nombre completo
+                        </label>
+                        <input type="text" id="reg-name" required placeholder="Tu nombre y apellidos">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-phone">
+                            <i class="fas fa-phone"></i> Teléfono móvil
+                        </label>
+                        <input type="tel" id="reg-phone" required placeholder="612 345 678" 
+                               pattern="[0-9]{9}" title="Introduce 9 dígitos">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-email">
+                            <i class="fas fa-envelope"></i> Correo electrónico
+                        </label>
+                        <input type="email" id="reg-email" required placeholder="tu@email.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-parque">
+                            <i class="fas fa-building"></i> Parque SEPEI
+                        </label>
+                        <select id="reg-parque" required>
+                            <option value="">Selecciona tu parque</option>
+                            ${PARQUES_SEPEI.map(p => `<option value="${p}">${p}</option>`).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="otro-parque-group" style="display:none;">
+                        <label for="reg-otro-parque">
+                            <i class="fas fa-edit"></i> Especifica el parque
+                        </label>
+                        <input type="text" id="reg-otro-parque" placeholder="Nombre del parque">
+                    </div>
+                    
+                    <button type="submit" class="btn-register">
+                        <i class="fas fa-paper-plane"></i> Solicitar Acceso
+                    </button>
+                </form>
+                
+                <p class="registration-note">
+                    <i class="fas fa-info-circle"></i>
+                    Tu solicitud será revisada por un administrador.
+                    Recibirás acceso una vez aprobada.
+                </p>
+            </div>
+        </div>
+    `;
     
-    // Datos del usuario
+    addRegistrationStyles();
+    document.body.insertAdjacentHTML('beforeend', formHTML);
+    
+    document.getElementById('reg-parque').addEventListener('change', function() {
+        const otroGroup = document.getElementById('otro-parque-group');
+        otroGroup.style.display = this.value === 'Otro' ? 'block' : 'none';
+        document.getElementById('reg-otro-parque').required = this.value === 'Otro';
+    });
+}
+
+function showPendingScreen(userData) {
+    document.getElementById('home-screen').style.display = 'none';
+    
+    addRegistrationStyles();
+    
+    const pendingHTML = `
+        <div class="registration-overlay" id="registration-overlay">
+            <div class="registration-container pending">
+                <div class="pending-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h2>Solicitud Pendiente</h2>
+                <p class="pending-message">
+                    Tu solicitud de acceso está siendo revisada por un administrador.
+                </p>
+                <div class="user-info-card">
+                    <p><strong>Nombre:</strong> ${userData.name}</p>
+                    <p><strong>Teléfono:</strong> ${userData.phone}</p>
+                    <p><strong>Email:</strong> ${userData.email}</p>
+                    <p><strong>Parque:</strong> ${userData.parque}</p>
+                    <p><strong>Fecha solicitud:</strong> ${new Date(userData.registrationDate).toLocaleDateString('es-ES')}</p>
+                </div>
+                <button class="btn-refresh" onclick="location.reload()">
+                    <i class="fas fa-sync"></i> Comprobar estado
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', pendingHTML);
+}
+
+function showRejectedScreen() {
+    document.getElementById('home-screen').style.display = 'none';
+    
+    addRegistrationStyles();
+    
+    const rejectedHTML = `
+        <div class="registration-overlay" id="registration-overlay">
+            <div class="registration-container rejected">
+                <div class="rejected-icon">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <h2>Acceso Denegado</h2>
+                <p class="rejected-message">
+                    Tu solicitud de acceso ha sido rechazada.
+                    Si crees que es un error, contacta con el administrador.
+                </p>
+                <button class="btn-retry" onclick="retryRegistration()">
+                    <i class="fas fa-redo"></i> Solicitar de nuevo
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', rejectedHTML);
+}
+
+function retryRegistration() {
+    localStorage.removeItem('sepei_user_id');
+    location.reload();
+}
+
+// ============================================
+// ENVÍO DE REGISTRO
+// ============================================
+
+function submitRegistration(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('reg-name').value.trim();
+    const phone = document.getElementById('reg-phone').value.trim().replace(/\s/g, '');
+    const email = document.getElementById('reg-email').value.trim().toLowerCase();
+    let parque = document.getElementById('reg-parque').value;
+    
+    if (parque === 'Otro') {
+        parque = document.getElementById('reg-otro-parque').value.trim();
+    }
+    
+    const visitorId = 'user_' + phone + '_' + Date.now().toString(36);
+    
     const userData = {
-        lastVisit: now.toISOString(),
-        visitCount: firebase.database.ServerValue.increment(1),
-        device: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
-        category: localStorage.getItem('selectedCategory') || 'none'
+        name: name,
+        phone: phone,
+        email: email,
+        parque: parque,
+        status: 'pending',
+        registrationDate: new Date().toISOString(),
+        device: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
     };
     
-    // Actualizar usuario
-    database.ref('users/' + visitorId).update(userData);
+    const submitBtn = document.querySelector('.btn-register');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+    submitBtn.disabled = true;
     
-    // Registrar visita diaria
-    database.ref('visits/' + today + '/' + visitorId).set({
-        timestamp: now.toISOString(),
-        device: userData.device
-    });
-    
-    // Incrementar contador global
-    database.ref('stats/totalVisits').transaction(count => (count || 0) + 1);
-    
-    // Marcar usuario como activo hoy
-    database.ref('stats/dailyUsers/' + today + '/' + visitorId).set(true);
+    database.ref('registeredUsers/' + visitorId).set(userData)
+        .then(() => {
+            localStorage.setItem('sepei_user_id', visitorId);
+            
+            database.ref('pendingApprovals/' + visitorId).set({
+                name: name,
+                phone: phone,
+                email: email,
+                parque: parque,
+                date: userData.registrationDate
+            });
+            
+            database.ref('stats/totalRegistrations').transaction(count => (count || 0) + 1);
+            
+            document.getElementById('registration-overlay').remove();
+            showPendingScreen(userData);
+        })
+        .catch(error => {
+            console.error("Error en registro:", error);
+            alert("Error al enviar la solicitud. Inténtalo de nuevo.");
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Solicitar Acceso';
+            submitBtn.disabled = false;
+        });
 }
 
-// Actualizar categoría seleccionada
+// ============================================
+// ACCESO PERMITIDO
+// ============================================
+
+function allowAccess() {
+    document.getElementById('home-screen').style.display = 'block';
+    
+    const overlay = document.getElementById('registration-overlay');
+    if (overlay) overlay.remove();
+}
+
+function updateUserActivity(userId) {
+    if (!database) return;
+    
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    
+    database.ref('registeredUsers/' + userId).update({
+        lastVisit: now.toISOString(),
+        visitCount: firebase.database.ServerValue.increment(1)
+    });
+    
+    database.ref('stats/totalVisits').transaction(count => (count || 0) + 1);
+    database.ref('stats/dailyUsers/' + today + '/' + userId).set(true);
+}
+
 function updateUserCategory(category) {
     if (!database) return;
     
-    const visitorId = getUserId();
-    database.ref('users/' + visitorId + '/category').set(category);
+    const userId = localStorage.getItem('sepei_user_id');
+    if (userId) {
+        database.ref('registeredUsers/' + userId + '/category').set(category);
+    }
 }
 
-// Mostrar panel de administrador
+// ============================================
+// PANEL DE ADMINISTRADOR
+// ============================================
+
 function showAdminPanel() {
-    // Crear estilos del panel
     const styles = `
         .admin-panel {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.95);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: white;
             z-index: 10000;
-            padding: 20px;
             overflow-y: auto;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-        .admin-panel h1 {
-            color: #f39c12;
-            text-align: center;
-            margin-bottom: 30px;
+        .admin-header {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        .admin-panel .close-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
+        .admin-header h1 {
+            color: #f39c12;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+        }
+        .admin-close {
             background: #e74c3c;
             color: white;
             border: none;
             padding: 10px 20px;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
         }
-        .admin-panel .stats-grid {
+        .admin-close:hover { background: #c0392b; }
+        .admin-content {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .admin-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .admin-tab {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        .admin-tab:hover { background: rgba(255,255,255,0.2); }
+        .admin-tab.active {
+            background: #3498db;
+            font-weight: bold;
+        }
+        .admin-tab .badge {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto 30px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
         }
-        .admin-panel .stat-card {
-            background: #2c3e50;
-            padding: 25px;
-            border-radius: 15px;
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
             text-align: center;
         }
-        .admin-panel .stat-card h3 {
+        .stat-card:hover { transform: translateY(-3px); background: rgba(255,255,255,0.15); }
+        .stat-card h3 {
             color: #95a5a6;
-            font-size: 14px;
-            margin-bottom: 10px;
+            font-size: 11px;
+            margin-bottom: 8px;
             text-transform: uppercase;
         }
-        .admin-panel .stat-card .number {
-            font-size: 48px;
+        .stat-card .number {
+            font-size: 32px;
             font-weight: bold;
             color: #3498db;
         }
-        .admin-panel .stat-card.highlight .number {
-            color: #2ecc71;
-        }
-        .admin-panel .users-list {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: #2c3e50;
-            border-radius: 15px;
+        .stat-card.highlight .number { color: #2ecc71; }
+        .stat-card.warning .number { color: #f39c12; }
+        .stat-card.danger .number { color: #e74c3c; }
+        .admin-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
             padding: 20px;
-        }
-        .admin-panel .users-list h2 {
-            color: #f39c12;
             margin-bottom: 20px;
         }
-        .admin-panel table {
+        .admin-section h2 {
+            color: #f39c12;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .admin-table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 13px;
         }
-        .admin-panel th, .admin-panel td {
-            padding: 12px;
+        .admin-table th, .admin-table td {
+            padding: 12px 8px;
             text-align: left;
-            border-bottom: 1px solid #34495e;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .admin-panel th {
+        .admin-table th {
             color: #f39c12;
             font-weight: 600;
-        }
-        .admin-panel .badge {
-            padding: 4px 8px;
-            border-radius: 4px;
+            background: rgba(0,0,0,0.2);
             font-size: 12px;
         }
-        .admin-panel .badge-mobile {
-            background: #9b59b6;
+        .admin-table tr:hover { background: rgba(255,255,255,0.05); }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
         }
-        .admin-panel .badge-desktop {
-            background: #3498db;
+        .badge-pending { background: #f39c12; color: #000; }
+        .badge-approved { background: #2ecc71; color: #000; }
+        .badge-rejected { background: #e74c3c; color: #fff; }
+        .badge-cabo { background: #e74c3c; color: #fff; }
+        .badge-sargento { background: #27ae60; color: #fff; }
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 2px;
+            transition: all 0.3s;
         }
-        .admin-panel .badge-cabo {
-            background: #e74c3c;
-        }
-        .admin-panel .badge-sargento {
-            background: #2ecc71;
-        }
-        .admin-panel .refresh-btn {
+        .btn-approve { background: #2ecc71; color: #000; }
+        .btn-approve:hover { background: #27ae60; }
+        .btn-reject { background: #e74c3c; color: #fff; }
+        .btn-reject:hover { background: #c0392b; }
+        .btn-delete { background: #95a5a6; color: #fff; }
+        .btn-delete:hover { background: #7f8c8d; }
+        .refresh-btn {
             background: #3498db;
             color: white;
             border: none;
             padding: 10px 20px;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: #95a5a6;
+        }
+        .empty-message i { font-size: 48px; margin-bottom: 15px; display: block; }
+        @media (max-width: 768px) {
+            .admin-table { font-size: 11px; }
+            .admin-table th, .admin-table td { padding: 8px 4px; }
+            .action-btn { padding: 4px 6px; font-size: 10px; }
+            .stat-card .number { font-size: 24px; }
         }
     `;
     
-    // Crear panel
     const panel = document.createElement('div');
     panel.className = 'admin-panel';
+    panel.id = 'admin-panel';
     panel.innerHTML = `
         <style>${styles}</style>
-        <button class="close-btn" onclick="this.parentElement.remove()">✕ Cerrar</button>
-        <h1>🔒 Panel de Administrador - SEPEI App</h1>
         
-        <div class="stats-grid">
-            <div class="stat-card highlight">
-                <h3>Usuarios Únicos</h3>
-                <div class="number" id="admin-total-users">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>Visitas Totales</h3>
-                <div class="number" id="admin-total-visits">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>Usuarios Hoy</h3>
-                <div class="number" id="admin-today-users">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>Estudiando Cabo</h3>
-                <div class="number" id="admin-cabo-users">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>Estudiando Sargento</h3>
-                <div class="number" id="admin-sargento-users">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>Móvil / Escritorio</h3>
-                <div class="number" id="admin-devices">-</div>
-            </div>
+        <div class="admin-header">
+            <h1><i class="fas fa-shield-alt"></i> Panel Administrador SEPEI</h1>
+            <button class="admin-close" onclick="document.getElementById('admin-panel').remove()">
+                <i class="fas fa-times"></i> Cerrar
+            </button>
         </div>
         
-        <div class="users-list">
-            <h2>📋 Últimos Usuarios Activos</h2>
-            <button class="refresh-btn" onclick="loadAdminStats()">🔄 Actualizar datos</button>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID Usuario</th>
-                        <th>Última Visita</th>
-                        <th>Visitas</th>
-                        <th>Dispositivo</th>
-                        <th>Categoría</th>
-                    </tr>
-                </thead>
-                <tbody id="admin-users-table">
-                    <tr><td colspan="5">Cargando...</td></tr>
-                </tbody>
-            </table>
+        <div class="admin-content">
+            <div class="stats-grid" id="admin-stats">
+                <div class="stat-card warning">
+                    <h3>Pendientes</h3>
+                    <div class="number" id="stat-pending">-</div>
+                </div>
+                <div class="stat-card highlight">
+                    <h3>Aprobados</h3>
+                    <div class="number" id="stat-approved">-</div>
+                </div>
+                <div class="stat-card danger">
+                    <h3>Rechazados</h3>
+                    <div class="number" id="stat-rejected">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Visitas Totales</h3>
+                    <div class="number" id="stat-visits">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Hoy</h3>
+                    <div class="number" id="stat-today">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Cabo</h3>
+                    <div class="number" id="stat-cabo">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Sargento</h3>
+                    <div class="number" id="stat-sargento">-</div>
+                </div>
+            </div>
+            
+            <div class="admin-tabs">
+                <button class="admin-tab active" onclick="showTab('pending', this)">
+                    <i class="fas fa-clock"></i> Pendientes <span class="badge" id="tab-pending-count">0</span>
+                </button>
+                <button class="admin-tab" onclick="showTab('approved', this)">
+                    <i class="fas fa-check"></i> Aprobados
+                </button>
+                <button class="admin-tab" onclick="showTab('rejected', this)">
+                    <i class="fas fa-times"></i> Rechazados
+                </button>
+                <button class="admin-tab" onclick="showTab('all', this)">
+                    <i class="fas fa-users"></i> Todos
+                </button>
+            </div>
+            
+            <div class="tab-content active" id="tab-pending">
+                <div class="admin-section">
+                    <h2><i class="fas fa-user-clock"></i> Solicitudes Pendientes</h2>
+                    <button class="refresh-btn" onclick="loadAdminData()">
+                        <i class="fas fa-sync"></i> Actualizar
+                    </button>
+                    <div id="pending-list"></div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="tab-approved">
+                <div class="admin-section">
+                    <h2><i class="fas fa-user-check"></i> Usuarios Aprobados</h2>
+                    <button class="refresh-btn" onclick="loadAdminData()">
+                        <i class="fas fa-sync"></i> Actualizar
+                    </button>
+                    <div id="approved-list"></div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="tab-rejected">
+                <div class="admin-section">
+                    <h2><i class="fas fa-user-times"></i> Usuarios Rechazados</h2>
+                    <button class="refresh-btn" onclick="loadAdminData()">
+                        <i class="fas fa-sync"></i> Actualizar
+                    </button>
+                    <div id="rejected-list"></div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="tab-all">
+                <div class="admin-section">
+                    <h2><i class="fas fa-users"></i> Todos los Usuarios</h2>
+                    <button class="refresh-btn" onclick="loadAdminData()">
+                        <i class="fas fa-sync"></i> Actualizar
+                    </button>
+                    <div id="all-users-list"></div>
+                </div>
+            </div>
         </div>
     `;
     
     document.body.appendChild(panel);
-    
-    // Cargar estadísticas
-    loadAdminStats();
+    loadAdminData();
 }
 
-// Cargar estadísticas del admin
-function loadAdminStats() {
+function showTab(tabName, btn) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+    
+    document.getElementById('tab-' + tabName).classList.add('active');
+    btn.classList.add('active');
+}
+
+function loadAdminData() {
     if (!database) return;
     
     const today = new Date().toISOString().split('T')[0];
     
-    // Obtener usuarios
-    database.ref('users').once('value', snapshot => {
+    database.ref('registeredUsers').once('value', snapshot => {
         const users = snapshot.val() || {};
         const userList = Object.entries(users);
         
-        // Contar totales
-        let totalUsers = userList.length;
-        let caboUsers = 0;
-        let sargentoUsers = 0;
-        let mobileUsers = 0;
-        let desktopUsers = 0;
+        let pending = [], approved = [], rejected = [];
+        let caboCount = 0, sargentoCount = 0;
         
         userList.forEach(([id, data]) => {
-            if (data.category === 'cabo') caboUsers++;
-            if (data.category === 'sargento') sargentoUsers++;
-            if (data.device === 'mobile') mobileUsers++;
-            if (data.device === 'desktop') desktopUsers++;
+            const userData = { id, ...data };
+            
+            if (data.status === 'pending') pending.push(userData);
+            else if (data.status === 'approved') approved.push(userData);
+            else if (data.status === 'rejected') rejected.push(userData);
+            
+            if (data.category === 'cabo') caboCount++;
+            if (data.category === 'sargento') sargentoCount++;
         });
         
-        // Actualizar UI
-        document.getElementById('admin-total-users').textContent = totalUsers;
-        document.getElementById('admin-cabo-users').textContent = caboUsers;
-        document.getElementById('admin-sargento-users').textContent = sargentoUsers;
-        document.getElementById('admin-devices').textContent = `${mobileUsers}/${desktopUsers}`;
+        document.getElementById('stat-pending').textContent = pending.length;
+        document.getElementById('stat-approved').textContent = approved.length;
+        document.getElementById('stat-rejected').textContent = rejected.length;
+        document.getElementById('stat-cabo').textContent = caboCount;
+        document.getElementById('stat-sargento').textContent = sargentoCount;
+        document.getElementById('tab-pending-count').textContent = pending.length;
         
-        // Tabla de usuarios (últimos 20)
-        const sortedUsers = userList
-            .sort((a, b) => new Date(b[1].lastVisit || 0) - new Date(a[1].lastVisit || 0))
-            .slice(0, 20);
-        
-        const tableBody = document.getElementById('admin-users-table');
-        tableBody.innerHTML = sortedUsers.map(([id, data]) => {
-            const lastVisit = data.lastVisit ? new Date(data.lastVisit).toLocaleString('es-ES') : 'Desconocido';
-            const deviceBadge = data.device === 'mobile' 
-                ? '<span class="badge badge-mobile">📱 Móvil</span>'
-                : '<span class="badge badge-desktop">💻 PC</span>';
-            const categoryBadge = data.category === 'cabo'
-                ? '<span class="badge badge-cabo">Cabo</span>'
-                : data.category === 'sargento'
-                    ? '<span class="badge badge-sargento">Sargento</span>'
-                    : '-';
-            
-            return `
-                <tr>
-                    <td>${id.substring(0, 15)}...</td>
-                    <td>${lastVisit}</td>
-                    <td>${data.visitCount || 1}</td>
-                    <td>${deviceBadge}</td>
-                    <td>${categoryBadge}</td>
-                </tr>
-            `;
-        }).join('');
+        renderUserList('pending-list', pending, 'pending');
+        renderUserList('approved-list', approved, 'approved');
+        renderUserList('rejected-list', rejected, 'rejected');
+        renderUserList('all-users-list', userList.map(([id, data]) => ({ id, ...data })), 'all');
     });
     
-    // Obtener visitas totales
     database.ref('stats/totalVisits').once('value', snapshot => {
-        document.getElementById('admin-total-visits').textContent = snapshot.val() || 0;
+        document.getElementById('stat-visits').textContent = snapshot.val() || 0;
     });
     
-    // Obtener usuarios de hoy
     database.ref('stats/dailyUsers/' + today).once('value', snapshot => {
         const todayUsers = snapshot.val() || {};
-        document.getElementById('admin-today-users').textContent = Object.keys(todayUsers).length;
+        document.getElementById('stat-today').textContent = Object.keys(todayUsers).length;
     });
 }
 
-// Inicializar cuando cargue la página
+function renderUserList(containerId, users, type) {
+    const container = document.getElementById(containerId);
+    
+    if (users.length === 0) {
+        container.innerHTML = `
+            <div class="empty-message">
+                <i class="fas fa-inbox"></i>
+                <p>No hay usuarios en esta categoría</p>
+            </div>
+        `;
+        return;
+    }
+    
+    users.sort((a, b) => new Date(b.registrationDate || 0) - new Date(a.registrationDate || 0));
+    
+    let tableHTML = `
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Teléfono</th>
+                    <th>Email</th>
+                    <th>Parque</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Estudiando</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    users.forEach(user => {
+        const date = user.registrationDate ? new Date(user.registrationDate).toLocaleDateString('es-ES') : '-';
+        const statusBadge = user.status === 'pending' ? '<span class="badge badge-pending">Pendiente</span>' :
+                           user.status === 'approved' ? '<span class="badge badge-approved">Aprobado</span>' :
+                           '<span class="badge badge-rejected">Rechazado</span>';
+        
+        const categoryBadge = user.category === 'cabo' ? '<span class="badge badge-cabo">Cabo</span>' :
+                             user.category === 'sargento' ? '<span class="badge badge-sargento">Sargento</span>' : '-';
+        
+        let actions = '';
+        if (user.status === 'pending') {
+            actions = `
+                <button class="action-btn btn-approve" onclick="approveUser('${user.id}')">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button class="action-btn btn-reject" onclick="rejectUser('${user.id}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+        } else if (user.status === 'approved') {
+            actions = `
+                <button class="action-btn btn-reject" onclick="rejectUser('${user.id}')">
+                    <i class="fas fa-ban"></i>
+                </button>
+            `;
+        } else {
+            actions = `
+                <button class="action-btn btn-approve" onclick="approveUser('${user.id}')">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button class="action-btn btn-delete" onclick="deleteUser('${user.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+        }
+        
+        tableHTML += `
+            <tr>
+                <td><strong>${user.name || '-'}</strong></td>
+                <td>${user.phone || '-'}</td>
+                <td style="font-size:11px;">${user.email || '-'}</td>
+                <td style="font-size:11px;">${user.parque || '-'}</td>
+                <td>${date}</td>
+                <td>${statusBadge}</td>
+                <td>${categoryBadge}</td>
+                <td>${actions}</td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += '</tbody></table>';
+    container.innerHTML = tableHTML;
+}
+
+// ============================================
+// ACCIONES DE ADMIN
+// ============================================
+
+function approveUser(userId) {
+    if (!confirm('¿Aprobar acceso a este usuario?')) return;
+    
+    database.ref('registeredUsers/' + userId).update({
+        status: 'approved',
+        approvedDate: new Date().toISOString()
+    }).then(() => {
+        database.ref('pendingApprovals/' + userId).remove();
+        loadAdminData();
+    });
+}
+
+function rejectUser(userId) {
+    if (!confirm('¿Rechazar/revocar acceso a este usuario?')) return;
+    
+    database.ref('registeredUsers/' + userId).update({
+        status: 'rejected',
+        rejectedDate: new Date().toISOString()
+    }).then(() => {
+        database.ref('pendingApprovals/' + userId).remove();
+        loadAdminData();
+    });
+}
+
+function deleteUser(userId) {
+    if (!confirm('¿Eliminar permanentemente este usuario?')) return;
+    
+    database.ref('registeredUsers/' + userId).remove().then(() => {
+        database.ref('pendingApprovals/' + userId).remove();
+        loadAdminData();
+    });
+}
+
+// ============================================
+// ESTILOS DE REGISTRO
+// ============================================
+
+function addRegistrationStyles() {
+    if (document.getElementById('registration-styles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'registration-styles';
+    styles.textContent = `
+        .registration-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .registration-container {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            margin: auto;
+        }
+        .registration-header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+        .registration-header i {
+            font-size: 50px;
+            color: #f39c12;
+            margin-bottom: 10px;
+        }
+        .registration-header h1 {
+            font-size: 28px;
+            margin: 10px 0 5px;
+        }
+        .registration-header p {
+            color: #95a5a6;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            color: #bdc3c7;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .form-group label i {
+            margin-right: 8px;
+            color: #f39c12;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #f39c12;
+            background: rgba(255,255,255,0.1);
+        }
+        .form-group input::placeholder { color: #7f8c8d; }
+        .form-group select option {
+            background: #1a1a2e;
+            color: white;
+        }
+        .btn-register {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(243, 156, 18, 0.4);
+        }
+        .btn-register:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .registration-note {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-top: 20px;
+            line-height: 1.5;
+        }
+        .registration-note i { color: #3498db; }
+        
+        .registration-container.pending .pending-icon {
+            text-align: center;
+            font-size: 60px;
+            color: #f39c12;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        .registration-container.pending h2,
+        .registration-container.rejected h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .pending-message, .rejected-message {
+            color: #bdc3c7;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .user-info-card {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .user-info-card p {
+            color: #ecf0f1;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        .user-info-card strong { color: #f39c12; }
+        .btn-refresh, .btn-retry {
+            width: 100%;
+            padding: 14px;
+            background: #3498db;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-retry { background: #95a5a6; }
+        
+        .registration-container.rejected .rejected-icon {
+            text-align: center;
+            font-size: 60px;
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+        .registration-container.rejected h2 { color: #e74c3c; }
+    `;
+    document.head.appendChild(styles);
+}
+
+// ============================================
+// INICIAR
+// ============================================
+
 document.addEventListener('DOMContentLoaded', initFirebase);
