@@ -166,6 +166,11 @@ function selectCategory(category) {
     document.getElementById('selected-category-title').textContent = title;
     document.getElementById('stats-category-name').textContent = category.charAt(0).toUpperCase() + category.slice(1);
     
+    // Notificar a Firebase la categoría seleccionada
+    if (typeof updateUserCategory === 'function') {
+        updateUserCategory(category);
+    }
+    
     // Actualizar estadísticas de categoría
     updateCategoryStats();
     
