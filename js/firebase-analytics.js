@@ -37,22 +37,20 @@ let currentUser = null;
 // ============================================
 
 function initFirebase() {
-    // PRIMERO: Verificar si es admin (antes de cualquier otra cosa)
+    // PRIMERO: Verificar si quiere acceder como admin
     const urlParams = new URLSearchParams(window.location.search);
-    const adminKey = urlParams.get('admin');
+    const wantsAdmin = urlParams.has('admin');
     
-    if (adminKey === ADMIN_PASSWORD) {
-        console.log("Acceso admin detectado");
-        isAdmin = true;
-        document.body.classList.add('authorized');
+    if (wantsAdmin) {
+        console.log("Solicitud de acceso admin detectada");
+        showAdminLoginForm();
+        return; // No continuar con el flujo normal
     }
     
     // Timeout de seguridad: si no conecta en 10 segundos, mostrar registro
     const connectionTimeout = setTimeout(() => {
         console.log("Timeout de conexión - mostrando registro");
-        if (!isAdmin) {
-            showRegistrationForm();
-        }
+        showRegistrationForm();
     }, 10000);
     
     try {
@@ -65,13 +63,7 @@ function initFirebase() {
                 console.log("Conectado a Firebase");
                 clearTimeout(connectionTimeout);
                 
-                // Si es admin, mostrar panel
-                if (isAdmin) {
-                    showAdminPanel();
-                    return;
-                }
-                
-                // Si no es admin, verificar registro
+                // Verificar registro de usuario
                 checkUserRegistration();
             }
         });
@@ -80,11 +72,171 @@ function initFirebase() {
     } catch (error) {
         console.error("Error inicializando Firebase:", error);
         clearTimeout(connectionTimeout);
-        // Si hay error y no es admin, mostrar formulario de registro
-        if (!isAdmin) {
-            showRegistrationForm();
-        }
+        showRegistrationForm();
     }
+}
+
+// ============================================
+// LOGIN DE ADMIN
+// ============================================
+
+function showAdminLoginForm() {
+    // Ocultar pantalla de carga
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+    }
+    
+    const loginHTML = `
+        <div class="admin-login-overlay" id="admin-login-overlay">
+            <div class="admin-login-box">
+                <div class="admin-login-header">
+                    <span class="admin-icon">🔐</span>
+                    <h2>Panel de Administración</h2>
+                </div>
+                <p>Introduce la contraseña de administrador:</p>
+                <input type="password" id="admin-password-input" placeholder="Contraseña" autocomplete="off">
+                <div class="admin-login-buttons">
+                    <button onclick="verifyAdminPassword()" class="btn-admin-login">Acceder</button>
+                    <button onclick="cancelAdminLogin()" class="btn-admin-cancel">Cancelar</button>
+                </div>
+                <p id="admin-login-error" class="admin-error" style="display: none;">Contraseña incorrecta</p>
+            </div>
+        </div>
+        <style>
+            .admin-login-overlay {
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+            .admin-login-box {
+                background: rgba(255,255,255,0.1);
+                padding: 40px;
+                border-radius: 16px;
+                text-align: center;
+                max-width: 400px;
+                width: 90%;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }
+            .admin-login-header {
+                margin-bottom: 20px;
+            }
+            .admin-icon {
+                font-size: 48px;
+                display: block;
+                margin-bottom: 10px;
+            }
+            .admin-login-box h2 {
+                color: #f39c12;
+                margin: 0;
+                font-size: 24px;
+            }
+            .admin-login-box p {
+                color: #ccc;
+                margin: 15px 0;
+            }
+            #admin-password-input {
+                width: 100%;
+                padding: 15px;
+                font-size: 16px;
+                border: 2px solid rgba(255,255,255,0.2);
+                border-radius: 8px;
+                background: rgba(0,0,0,0.3);
+                color: white;
+                text-align: center;
+                box-sizing: border-box;
+                margin-bottom: 20px;
+            }
+            #admin-password-input:focus {
+                outline: none;
+                border-color: #f39c12;
+            }
+            .admin-login-buttons {
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+            }
+            .btn-admin-login {
+                background: #27ae60;
+                color: white;
+                border: none;
+                padding: 12px 30px;
+                border-radius: 8px;
+                font-size: 16px;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+            .btn-admin-login:hover { background: #2ecc71; }
+            .btn-admin-cancel {
+                background: #7f8c8d;
+                color: white;
+                border: none;
+                padding: 12px 30px;
+                border-radius: 8px;
+                font-size: 16px;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+            .btn-admin-cancel:hover { background: #95a5a6; }
+            .admin-error {
+                color: #e74c3c !important;
+                font-weight: bold;
+                margin-top: 15px !important;
+            }
+        </style>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', loginHTML);
+    
+    // Focus en el input y permitir Enter
+    const input = document.getElementById('admin-password-input');
+    input.focus();
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            verifyAdminPassword();
+        }
+    });
+}
+
+function verifyAdminPassword() {
+    const input = document.getElementById('admin-password-input');
+    const password = input.value;
+    
+    if (password === ADMIN_PASSWORD) {
+        isAdmin = true;
+        document.body.classList.add('authorized');
+        
+        // Remover formulario de login
+        const overlay = document.getElementById('admin-login-overlay');
+        if (overlay) overlay.remove();
+        
+        // Inicializar Firebase y mostrar panel
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            database = firebase.database();
+            showAdminPanel();
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Error conectando con Firebase");
+        }
+    } else {
+        // Mostrar error
+        document.getElementById('admin-login-error').style.display = 'block';
+        input.value = '';
+        input.focus();
+    }
+}
+
+function cancelAdminLogin() {
+    // Redirigir a la app sin parámetro admin
+    window.location.href = window.location.pathname;
 }
 
 // ============================================
