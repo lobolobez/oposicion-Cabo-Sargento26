@@ -72,7 +72,7 @@ function initEventListeners() {
             if (mode === 'exam') {
                 showExamConfigModal();
             } else {
-                startPracticeMode();
+                checkPracticeProgress();
             }
         });
     });
@@ -195,11 +195,59 @@ function updateCategoryStats() {
 // MODO BATERÍA (PRÁCTICA)
 // ============================================
 
-function startPracticeMode() {
+// Variable para guardar la última posición
+let savedPracticePosition = 0;
+
+function checkPracticeProgress() {
+    const stats = AppState.stats[AppState.currentCategory];
+    const hasProgress = stats.answered.size > 0;
+    
+    if (hasProgress) {
+        // Encontrar la última pregunta respondida
+        const answeredArray = [...stats.answered].sort((a, b) => b - a);
+        savedPracticePosition = Math.min(answeredArray[0] + 1, AppState.questions.length - 1);
+        
+        // Actualizar texto del modal
+        const progressPercent = Math.round((stats.answered.size / AppState.questions.length) * 100);
+        document.getElementById('continue-modal-text').innerHTML = 
+            `Tienes <strong>${stats.answered.size}</strong> preguntas respondidas (${progressPercent}%).<br>¿Qué deseas hacer?`;
+        
+        // Mostrar modal
+        document.getElementById('continue-modal').classList.add('active');
+    } else {
+        // Sin progreso, empezar directamente
+        startPracticeMode(false);
+    }
+}
+
+function continuePractice() {
+    document.getElementById('continue-modal').classList.remove('active');
+    startPracticeMode(true);
+}
+
+function restartPractice() {
+    document.getElementById('continue-modal').classList.remove('active');
+    startPracticeMode(false);
+}
+
+function startPracticeMode(continueFromSaved = false) {
     AppState.currentMode = 'practice';
-    AppState.currentQuestionIndex = 0;
     AppState.filteredQuestions = [...AppState.questions];
     AppState.userAnswers = new Array(AppState.questions.length).fill(null);
+    
+    // Restaurar respuestas guardadas
+    const stats = AppState.stats[AppState.currentCategory];
+    stats.answered.forEach(index => {
+        // Marcar como respondidas (aunque no sabemos qué respuesta dio)
+        // El sistema mostrará la respuesta correcta si ya está respondida
+    });
+    
+    // Determinar posición inicial
+    if (continueFromSaved && savedPracticePosition > 0) {
+        AppState.currentQuestionIndex = savedPracticePosition;
+    } else {
+        AppState.currentQuestionIndex = 0;
+    }
     
     // Configurar UI
     document.getElementById('practice-category').textContent = 
@@ -208,11 +256,54 @@ function startPracticeMode() {
     // Cargar temas en el filtro
     loadTopicsFilter();
     
-    // Mostrar primera pregunta
+    // Mostrar pregunta
     renderPracticeQuestion();
     updatePracticeProgress();
     
     showPracticeScreen();
+}
+
+// ============================================
+// RESETEO DE ESTADÍSTICAS
+// ============================================
+
+function showResetConfirmation() {
+    const categoryName = AppState.currentCategory === 'cabo' ? 'Cabo' : 'Sargento';
+    document.getElementById('reset-category-name').textContent = categoryName;
+    document.getElementById('reset-modal').classList.add('active');
+}
+
+function hideResetModal() {
+    document.getElementById('reset-modal').classList.remove('active');
+}
+
+function confirmResetStats() {
+    const category = AppState.currentCategory;
+    
+    // Resetear estadísticas locales
+    AppState.stats[category] = {
+        answered: new Set(),
+        correct: 0,
+        incorrect: 0,
+        examsCompleted: 0,
+        examScores: []
+    };
+    
+    // Resetear respuestas del usuario
+    AppState.userAnswers = new Array(AppState.questions.length).fill(null);
+    
+    // Guardar en localStorage
+    saveStats();
+    
+    // Actualizar UI
+    updateModeScreenStats();
+    updateHomeStats();
+    
+    // Cerrar modal
+    hideResetModal();
+    
+    // Mostrar confirmación
+    alert('Las estadísticas han sido reseteadas correctamente.');
 }
 
 function loadTopicsFilter() {

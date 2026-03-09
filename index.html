@@ -178,6 +178,40 @@
                         <span class="stat-desc">Exámenes</span>
                     </div>
                 </div>
+                
+                <!-- Botón de reseteo de estadísticas -->
+                <button class="btn-reset-stats" id="btn-reset-stats" onclick="showResetConfirmation()">
+                    <i class="fas fa-trash-alt"></i> Resetear estadísticas
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de continuar o empezar de nuevo -->
+    <div class="modal-overlay" id="continue-modal">
+        <div class="modal-content continue-modal-content">
+            <h3><i class="fas fa-play-circle"></i> Modo Batería</h3>
+            <p id="continue-modal-text">Tienes progreso guardado. ¿Qué deseas hacer?</p>
+            <div class="continue-options">
+                <button class="btn-continue" onclick="continuePractice()">
+                    <i class="fas fa-forward"></i> Continuar donde lo dejé
+                </button>
+                <button class="btn-restart" onclick="restartPractice()">
+                    <i class="fas fa-redo"></i> Empezar desde el principio
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación de reset -->
+    <div class="modal-overlay" id="reset-modal">
+        <div class="modal-content reset-modal-content">
+            <h3><i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i> Resetear Estadísticas</h3>
+            <p>¿Estás seguro de que quieres borrar todas tus estadísticas de <strong id="reset-category-name">Cabo</strong>?</p>
+            <p class="warning-text">Esta acción no se puede deshacer.</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="hideResetModal()">Cancelar</button>
+                <button class="btn-danger" onclick="confirmResetStats()">Sí, borrar todo</button>
             </div>
         </div>
     </div>
