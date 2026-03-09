@@ -18,14 +18,14 @@ const ADMIN_PASSWORD = "S3p€i_Adm!n_2o26#Lob";
 
 // Lista de parques SEPEI
 const PARQUES_SEPEI = [
-    "Parque Central - Albacete",
+    "Parque de Albacete",
     "Parque de Hellín",
     "Parque de Villarrobledo",
     "Parque de Almansa",
     "Parque de La Roda",
     "Parque de Casas Ibáñez",
     "Parque de Alcaraz",
-    "Parque de Caudete",
+    "Parque de Molinicos",
     "Otro"
 ];
 
