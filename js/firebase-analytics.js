@@ -14,7 +14,7 @@ const firebaseConfig = {
 };
 
 // Contraseña para acceder al panel admin
-const ADMIN_PASSWORD = "S3p€i_Adm!n_2o26#Lob";
+const ADMIN_PASSWORD = "S3peiAdmin2026Lob";
 
 // Lista de parques SEPEI
 const PARQUES_SEPEI = [
