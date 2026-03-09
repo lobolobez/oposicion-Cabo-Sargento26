@@ -37,10 +37,22 @@ let currentUser = null;
 // ============================================
 
 function initFirebase() {
+    // PRIMERO: Verificar si es admin (antes de cualquier otra cosa)
+    const urlParams = new URLSearchParams(window.location.search);
+    const adminKey = urlParams.get('admin');
+    
+    if (adminKey === ADMIN_PASSWORD) {
+        console.log("Acceso admin detectado");
+        isAdmin = true;
+        document.body.classList.add('authorized');
+    }
+    
     // Timeout de seguridad: si no conecta en 10 segundos, mostrar registro
     const connectionTimeout = setTimeout(() => {
         console.log("Timeout de conexión - mostrando registro");
-        showRegistrationForm();
+        if (!isAdmin) {
+            showRegistrationForm();
+        }
     }, 10000);
     
     try {
@@ -53,13 +65,14 @@ function initFirebase() {
                 console.log("Conectado a Firebase");
                 clearTimeout(connectionTimeout);
                 
-                // Verificar si es admin
-                checkAdminAccess();
+                // Si es admin, mostrar panel
+                if (isAdmin) {
+                    showAdminPanel();
+                    return;
+                }
                 
                 // Si no es admin, verificar registro
-                if (!isAdmin) {
-                    checkUserRegistration();
-                }
+                checkUserRegistration();
             }
         });
         
@@ -67,8 +80,10 @@ function initFirebase() {
     } catch (error) {
         console.error("Error inicializando Firebase:", error);
         clearTimeout(connectionTimeout);
-        // Si hay error, mostrar formulario de registro
-        showRegistrationForm();
+        // Si hay error y no es admin, mostrar formulario de registro
+        if (!isAdmin) {
+            showRegistrationForm();
+        }
     }
 }
 
