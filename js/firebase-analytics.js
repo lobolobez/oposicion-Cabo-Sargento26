@@ -599,6 +599,37 @@ function updateUserStats(correct, total) {
     });
 }
 
+// Función para guardar resultado de examen en Firebase
+function saveExamResult(examData) {
+    if (!database) return;
+    
+    const userId = localStorage.getItem('sepei_user_id');
+    if (!userId) return;
+    
+    // Guardar el examen en el historial del usuario
+    database.ref('registeredUsers/' + userId + '/exams').push({
+        date: new Date().toISOString(),
+        category: examData.category,
+        score: examData.score,
+        correct: examData.correct,
+        incorrect: examData.incorrect,
+        blank: examData.blank,
+        percentage: examData.percentage,
+        passed: examData.passed
+    });
+    
+    // Incrementar contador de exámenes
+    database.ref('registeredUsers/' + userId + '/examsCompleted').transaction(count => (count || 0) + 1);
+    
+    // Actualizar mejor puntuación si es mayor
+    database.ref('registeredUsers/' + userId + '/bestScore').transaction(best => {
+        if (!best || examData.score > best) {
+            return examData.score;
+        }
+        return best;
+    });
+}
+
 function updateUserCategory(category) {
     if (!database) return;
     
@@ -759,6 +790,14 @@ function showAdminPanel() {
         .stat-percent.good { background: #27ae60; color: white; }
         .stat-percent.medium { background: #f39c12; color: #000; }
         .stat-percent.low { background: #e74c3c; color: white; }
+        .exam-count {
+            font-weight: bold;
+            background: #9b59b6;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-right: 5px;
+        }
         .action-btn {
             padding: 6px 12px;
             border: none;
@@ -979,11 +1018,11 @@ function renderUserList(containerId, users, type) {
             <thead>
                 <tr>
                     <th>Nombre</th>
-                    <th>Teléfono</th>
                     <th>Parque</th>
                     <th>Estudiando</th>
                     <th>Tiempo</th>
                     <th>Aciertos</th>
+                    <th>Exámenes</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
@@ -1012,6 +1051,13 @@ function renderUserList(containerId, users, type) {
         const percentage = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
         const percentageDisplay = totalAnswered > 0 
             ? `<span class="stat-percent ${percentage >= 70 ? 'good' : percentage >= 50 ? 'medium' : 'low'}">${percentage}%</span> <small>(${totalCorrect}/${totalAnswered})</small>` 
+            : '-';
+        
+        // Información de exámenes
+        const examsCount = user.examsCompleted || 0;
+        const bestScore = user.bestScore ? user.bestScore.toFixed(1) : '-';
+        const examsDisplay = examsCount > 0 
+            ? `<span class="exam-count">${examsCount}</span> <small>Mejor: ${bestScore}</small>`
             : '-';
         
         let actions = '';
@@ -1044,11 +1090,11 @@ function renderUserList(containerId, users, type) {
         tableHTML += `
             <tr>
                 <td><strong>${user.name || '-'}</strong><br><small style="color:#888;">${user.phone || ''}</small></td>
-                <td style="font-size:11px;">${user.email || '-'}</td>
                 <td style="font-size:11px;">${user.parque || '-'}</td>
                 <td>${categoryBadge}</td>
                 <td><i class="fas fa-clock" style="color:#3498db;"></i> ${timeDisplay}</td>
                 <td>${percentageDisplay}</td>
+                <td><i class="fas fa-file-alt" style="color:#9b59b6;"></i> ${examsDisplay}</td>
                 <td>${statusBadge}</td>
                 <td>${actions}</td>
             </tr>

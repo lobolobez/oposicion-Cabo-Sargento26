@@ -734,6 +734,19 @@ function submitExam() {
         updateUserStats(correct, correct + incorrect + blank);
     }
     
+    // Guardar resultado del examen en Firebase
+    if (typeof saveExamResult === 'function') {
+        saveExamResult({
+            category: AppState.currentCategory,
+            score: score,
+            correct: correct,
+            incorrect: incorrect,
+            blank: blank,
+            percentage: percentage,
+            passed: percentage >= 50
+        });
+    }
+    
     // Mostrar resultados
     document.getElementById('results-category').textContent = 
         AppState.currentCategory === 'cabo' ? 'CABO SEPEI' : 'SARGENTO SEPEI';
