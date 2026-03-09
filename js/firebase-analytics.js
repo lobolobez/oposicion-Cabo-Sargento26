@@ -432,6 +432,30 @@ function retryRegistration() {
 // ENVÍO DE REGISTRO
 // ============================================
 
+function validateEmail(email) {
+    // Expresión regular para validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+function showEmailError(message) {
+    let errorDiv = document.getElementById('email-error');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'email-error';
+        errorDiv.style.cssText = 'color: #e74c3c; font-size: 12px; margin-top: 5px;';
+        document.getElementById('reg-email').parentNode.appendChild(errorDiv);
+    }
+    errorDiv.textContent = message;
+}
+
+function clearEmailError() {
+    const errorDiv = document.getElementById('email-error');
+    if (errorDiv) {
+        errorDiv.textContent = '';
+    }
+}
+
 function submitRegistration(event) {
     event.preventDefault();
     
@@ -439,6 +463,14 @@ function submitRegistration(event) {
     const phone = document.getElementById('reg-phone').value.trim().replace(/\s/g, '');
     const email = document.getElementById('reg-email').value.trim().toLowerCase();
     const parque = document.getElementById('reg-parque').value;
+    
+    // Validar formato de email
+    if (!validateEmail(email)) {
+        showEmailError('Por favor, introduce un email válido (ej: nombre@dominio.com)');
+        document.getElementById('reg-email').focus();
+        return;
+    }
+    clearEmailError();
     
     const visitorId = 'user_' + phone + '_' + Date.now().toString(36);
     
