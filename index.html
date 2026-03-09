@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEPEI - Preparación Oposiciones Cabo/Sargento</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Pantalla de inicio -->
+    <div id="home-screen" class="screen active">
+        <div class="container">
+            <header class="main-header">
+                <div class="logo">
+                    <i class="fas fa-fire-extinguisher"></i>
+                    <h1>SEPEI</h1>
+                </div>
+                <p class="subtitle">Preparación Oposiciones</p>
+            </header>
+
+            <div class="category-selection">
+                <h2>Selecciona tu oposición</h2>
+                <div class="category-cards">
+                    <div class="category-card" data-category="cabo">
+                        <div class="card-icon">
+                            <i class="fas fa-shield-halved"></i>
+                        </div>
+                        <h3>CABO</h3>
+                        <p>1500 preguntas</p>
+                        <div class="progress-info">
+                            <span class="progress-label">Progreso:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="cabo-progress"></div>
+                            </div>
+                            <span class="progress-text" id="cabo-progress-text">0%</span>
+                        </div>
+                    </div>
+                    <div class="category-card" data-category="sargento">
+                        <div class="card-icon">
+                            <i class="fas fa-medal"></i>
+                        </div>
+                        <h3>SARGENTO</h3>
+                        <p>1500 preguntas</p>
+                        <div class="progress-info">
+                            <span class="progress-label">Progreso:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="sargento-progress"></div>
+                            </div>
+                            <span class="progress-text" id="sargento-progress-text">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-summary">
+                <h3><i class="fas fa-chart-line"></i> Estadísticas Generales</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-value" id="total-answered">0</span>
+                        <span class="stat-label">Respondidas</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="total-correct">0%</span>
+                        <span class="stat-label">Aciertos</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="exams-completed">0</span>
+                        <span class="stat-label">Exámenes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de selección de modo -->
+    <div id="mode-screen" class="screen">
+        <div class="container">
+            <button class="btn-back" id="btn-back-home">
+                <i class="fas fa-arrow-left"></i> Volver
+            </button>
+            
+            <header class="mode-header">
+                <h2 id="selected-category-title">CABO SEPEI</h2>
+            </header>
+
+            <div class="mode-selection">
+                <div class="mode-card" data-mode="practice">
+                    <div class="mode-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h3>Modo Batería</h3>
+                    <p>Preguntas continuas para repasar. Sin límite de tiempo ni puntuación.</p>
+                    <ul class="mode-features">
+                        <li><i class="fas fa-check"></i> Respuestas inmediatas</li>
+                        <li><i class="fas fa-check"></i> Explicaciones detalladas</li>
+                        <li><i class="fas fa-check"></i> Guarda tu progreso</li>
+                        <li><i class="fas fa-check"></i> Filtra por temas</li>
+                    </ul>
+                    <button class="btn-mode btn-primary">Comenzar</button>
+                </div>
+                
+                <div class="mode-card" data-mode="exam">
+                    <div class="mode-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h3>Modo Examen</h3>
+                    <p>Simulacro de examen real con 60 preguntas aleatorias.</p>
+                    <ul class="mode-features">
+                        <li><i class="fas fa-check"></i> 60 preguntas</li>
+                        <li><i class="fas fa-check"></i> Tiempo limitado opcional</li>
+                        <li><i class="fas fa-check"></i> Puntuación final</li>
+                        <li><i class="fas fa-check"></i> Revisión de errores</li>
+                    </ul>
+                    <button class="btn-mode btn-secondary">Comenzar</button>
+                </div>
+            </div>
+
+            <div class="category-stats">
+                <h3><i class="fas fa-chart-bar"></i> Estadísticas <span id="stats-category-name">Cabo</span></h3>
+                <div class="stats-detailed">
+                    <div class="stat-box">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="stat-number" id="cat-total-questions">1500</span>
+                        <span class="stat-desc">Total preguntas</span>
+                    </div>
+                    <div class="stat-box">
+                        <i class="fas fa-check-circle"></i>
+                        <span class="stat-number" id="cat-answered">0</span>
+                        <span class="stat-desc">Respondidas</span>
+                    </div>
+                    <div class="stat-box">
+                        <i class="fas fa-percentage"></i>
+                        <span class="stat-number" id="cat-accuracy">0%</span>
+                        <span class="stat-desc">Precisión</span>
+                    </div>
+                    <div class="stat-box">
+                        <i class="fas fa-file-alt"></i>
+                        <span class="stat-number" id="cat-exams">0</span>
+                        <span class="stat-desc">Exámenes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de práctica (Modo Batería) -->
+    <div id="practice-screen" class="screen">
+        <div class="container">
+            <div class="practice-header">
+                <button class="btn-back" id="btn-back-mode-practice">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="practice-info">
+                    <span class="practice-category" id="practice-category">CABO</span>
+                    <span class="practice-mode">Modo Batería</span>
+                </div>
+                <div class="practice-counter">
+                    <span id="current-question-num">1</span> / <span id="total-questions">1500</span>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <button class="btn-filter" id="btn-toggle-filter">
+                    <i class="fas fa-filter"></i> Filtrar por tema
+                </button>
+                <div class="filter-dropdown" id="filter-dropdown">
+                    <select id="topic-filter">
+                        <option value="all">Todos los temas</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="question-container">
+                <div class="question-number">Pregunta <span id="q-number">1</span></div>
+                <div class="question-topic" id="question-topic">Tema: General</div>
+                <div class="question-text" id="question-text">
+                    Cargando pregunta...
+                </div>
+
+                <div class="answers-container" id="answers-container">
+                    <!-- Las respuestas se generan dinámicamente -->
+                </div>
+
+                <div class="feedback-container" id="feedback-container" style="display: none;">
+                    <div class="feedback-header">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Explicación</span>
+                    </div>
+                    <p id="feedback-text"></p>
+                </div>
+            </div>
+
+            <div class="practice-actions">
+                <button class="btn-action" id="btn-prev-question" disabled>
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </button>
+                <button class="btn-action btn-primary" id="btn-next-question">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <div class="practice-progress">
+                <div class="progress-bar large">
+                    <div class="progress-fill" id="practice-progress-bar"></div>
+                </div>
+                <div class="progress-stats">
+                    <span class="correct"><i class="fas fa-check"></i> <span id="practice-correct">0</span></span>
+                    <span class="incorrect"><i class="fas fa-times"></i> <span id="practice-incorrect">0</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de examen -->
+    <div id="exam-screen" class="screen">
+        <div class="container">
+            <div class="exam-header">
+                <button class="btn-back" id="btn-back-mode-exam">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="exam-info">
+                    <span class="exam-category" id="exam-category">CABO</span>
+                    <span class="exam-mode">Modo Examen</span>
+                </div>
+                <div class="exam-timer" id="exam-timer">
+                    <i class="fas fa-clock"></i>
+                    <span id="timer-display">--:--</span>
+                </div>
+            </div>
+
+            <div class="exam-progress-bar">
+                <div class="exam-progress-fill" id="exam-progress-fill"></div>
+            </div>
+
+            <div class="question-navigator">
+                <button class="btn-nav" id="btn-nav-toggle">
+                    <i class="fas fa-th"></i> Ver todas
+                </button>
+                <div class="question-nav-grid" id="question-nav-grid" style="display: none;">
+                    <!-- Se genera dinámicamente -->
+                </div>
+            </div>
+
+            <div class="question-container exam-question">
+                <div class="question-number">Pregunta <span id="exam-q-number">1</span> de 60</div>
+                <div class="question-text" id="exam-question-text">
+                    Cargando pregunta...
+                </div>
+
+                <div class="answers-container" id="exam-answers-container">
+                    <!-- Las respuestas se generan dinámicamente -->
+                </div>
+            </div>
+
+            <div class="exam-actions">
+                <button class="btn-action" id="btn-exam-prev" disabled>
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </button>
+                <button class="btn-action" id="btn-mark-review">
+                    <i class="fas fa-flag"></i> Marcar
+                </button>
+                <button class="btn-action btn-primary" id="btn-exam-next">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <div class="exam-submit-section">
+                <button class="btn-submit" id="btn-submit-exam">
+                    <i class="fas fa-paper-plane"></i> Finalizar Examen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de resultados del examen -->
+    <div id="results-screen" class="screen">
+        <div class="container">
+            <div class="results-header">
+                <h2>Resultados del Examen</h2>
+                <span class="results-category" id="results-category">CABO SEPEI</span>
+            </div>
+
+            <div class="results-summary">
+                <div class="score-circle" id="score-circle">
+                    <svg viewBox="0 0 100 100">
+                        <circle class="score-bg" cx="50" cy="50" r="45"></circle>
+                        <circle class="score-fill" cx="50" cy="50" r="45" id="score-fill-circle"></circle>
+                    </svg>
+                    <div class="score-text">
+                        <span class="score-value" id="final-score">0</span>
+                        <span class="score-label">puntos</span>
+                    </div>
+                </div>
+
+                <div class="results-details">
+                    <div class="result-item correct">
+                        <i class="fas fa-check-circle"></i>
+                        <span class="result-value" id="results-correct">0</span>
+                        <span class="result-label">Correctas</span>
+                    </div>
+                    <div class="result-item incorrect">
+                        <i class="fas fa-times-circle"></i>
+                        <span class="result-value" id="results-incorrect">0</span>
+                        <span class="result-label">Incorrectas</span>
+                    </div>
+                    <div class="result-item blank">
+                        <i class="fas fa-minus-circle"></i>
+                        <span class="result-value" id="results-blank">0</span>
+                        <span class="result-label">En blanco</span>
+                    </div>
+                </div>
+
+                <div class="results-grade" id="results-grade">
+                    <span class="grade-text">APROBADO</span>
+                </div>
+            </div>
+
+            <div class="results-actions">
+                <button class="btn-action btn-primary" id="btn-review-exam">
+                    <i class="fas fa-search"></i> Revisar Respuestas
+                </button>
+                <button class="btn-action" id="btn-new-exam">
+                    <i class="fas fa-redo"></i> Nuevo Examen
+                </button>
+                <button class="btn-action" id="btn-back-home-results">
+                    <i class="fas fa-home"></i> Inicio
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de revisión del examen -->
+    <div id="review-screen" class="screen">
+        <div class="container">
+            <div class="review-header">
+                <button class="btn-back" id="btn-back-results">
+                    <i class="fas fa-arrow-left"></i> Volver a resultados
+                </button>
+                <h2>Revisión del Examen</h2>
+            </div>
+
+            <div class="review-filters">
+                <button class="review-filter active" data-filter="all">Todas</button>
+                <button class="review-filter" data-filter="correct">Correctas</button>
+                <button class="review-filter" data-filter="incorrect">Incorrectas</button>
+                <button class="review-filter" data-filter="blank">En blanco</button>
+            </div>
+
+            <div class="review-list" id="review-list">
+                <!-- Se genera dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de configuración del examen -->
+    <div id="exam-config-modal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-cog"></i> Configurar Examen</h3>
+            
+            <div class="config-option">
+                <label>
+                    <input type="checkbox" id="enable-timer" checked>
+                    Activar temporizador
+                </label>
+            </div>
+            
+            <div class="config-option" id="timer-config">
+                <label for="exam-duration">Duración (minutos):</label>
+                <input type="number" id="exam-duration" value="90" min="30" max="180">
+            </div>
+
+            <div class="config-option">
+                <label>
+                    <input type="checkbox" id="shuffle-questions" checked>
+                    Mezclar preguntas
+                </label>
+            </div>
+
+            <div class="config-option">
+                <label>
+                    <input type="checkbox" id="shuffle-answers" checked>
+                    Mezclar respuestas
+                </label>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" id="btn-cancel-exam">Cancelar</button>
+                <button class="btn-primary" id="btn-start-exam">Comenzar Examen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación de salida -->
+    <div id="exit-modal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-exclamation-triangle"></i> ¿Salir del examen?</h3>
+            <p>Si sales ahora, perderás todo el progreso del examen actual.</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="btn-continue-exam">Continuar</button>
+                <button class="btn-danger" id="btn-confirm-exit">Salir</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/questions-cabo.js"></script>
+    <script src="js/questions-sargento.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
