@@ -1352,7 +1352,8 @@ body {
    MODALES
    ============================================ */
 
-.modal {
+.modal,
+.modal-overlay {
     display: none;
     position: fixed;
     top: 0;
@@ -1366,7 +1367,8 @@ body {
     padding: 20px;
 }
 
-.modal.active {
+.modal.active,
+.modal-overlay.active {
     display: flex;
     animation: fadeIn 0.3s ease;
 }

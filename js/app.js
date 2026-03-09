@@ -201,14 +201,15 @@ let savedPracticePosition = 0;
 function checkPracticeProgress() {
     const stats = AppState.stats[AppState.currentCategory];
     const hasProgress = stats.answered.size > 0;
+    const totalQuestions = AppState.questions.length;
     
-    if (hasProgress) {
+    if (hasProgress && totalQuestions > 0) {
         // Encontrar la última pregunta respondida
         const answeredArray = [...stats.answered].sort((a, b) => b - a);
-        savedPracticePosition = Math.min(answeredArray[0] + 1, AppState.questions.length - 1);
+        savedPracticePosition = Math.min(answeredArray[0] + 1, totalQuestions - 1);
         
         // Actualizar texto del modal
-        const progressPercent = Math.round((stats.answered.size / AppState.questions.length) * 100);
+        const progressPercent = Math.round((stats.answered.size / totalQuestions) * 100);
         document.getElementById('continue-modal-text').innerHTML = 
             `Tienes <strong>${stats.answered.size}</strong> preguntas respondidas (${progressPercent}%).<br>¿Qué deseas hacer?`;
         
