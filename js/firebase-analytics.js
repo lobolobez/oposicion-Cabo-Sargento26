@@ -39,6 +39,10 @@ let currentUser = null;
 // ============================================
 
 function initFirebase() {
+    // Ocultar la app hasta verificar acceso
+    const homeScreen = document.getElementById('home-screen');
+    if (homeScreen) homeScreen.style.display = 'none';
+    
     try {
         firebase.initializeApp(firebaseConfig);
         database = firebase.database();
@@ -54,6 +58,8 @@ function initFirebase() {
         console.log("Firebase inicializado correctamente");
     } catch (error) {
         console.error("Error inicializando Firebase:", error);
+        // Si hay error, mostrar formulario de registro
+        showRegistrationForm();
     }
 }
 
