@@ -39,25 +39,36 @@ let currentUser = null;
 // ============================================
 
 function initFirebase() {
-    // Ocultar la app hasta verificar acceso
-    const homeScreen = document.getElementById('home-screen');
-    if (homeScreen) homeScreen.style.display = 'none';
+    // Timeout de seguridad: si no conecta en 10 segundos, mostrar registro
+    const connectionTimeout = setTimeout(() => {
+        console.log("Timeout de conexión - mostrando registro");
+        showRegistrationForm();
+    }, 10000);
     
     try {
         firebase.initializeApp(firebaseConfig);
         database = firebase.database();
         
-        // Verificar si es admin
-        checkAdminAccess();
-        
-        // Si no es admin, verificar registro
-        if (!isAdmin) {
-            checkUserRegistration();
-        }
+        // Verificar conexión a Firebase
+        database.ref('.info/connected').on('value', (snapshot) => {
+            if (snapshot.val() === true) {
+                console.log("Conectado a Firebase");
+                clearTimeout(connectionTimeout);
+                
+                // Verificar si es admin
+                checkAdminAccess();
+                
+                // Si no es admin, verificar registro
+                if (!isAdmin) {
+                    checkUserRegistration();
+                }
+            }
+        });
         
         console.log("Firebase inicializado correctamente");
     } catch (error) {
         console.error("Error inicializando Firebase:", error);
+        clearTimeout(connectionTimeout);
         // Si hay error, mostrar formulario de registro
         showRegistrationForm();
     }
