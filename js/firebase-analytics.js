@@ -472,6 +472,65 @@ function submitRegistration(event) {
     }
     clearEmailError();
     
+    const submitBtn = document.querySelector('.btn-register');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+    submitBtn.disabled = true;
+    
+    // PRIMERO: Buscar si ya existe un usuario con el mismo email o teléfono
+    database.ref('registeredUsers').once('value')
+        .then(snapshot => {
+            const users = snapshot.val();
+            let existingUserId = null;
+            let existingUserData = null;
+            
+            // Buscar usuario existente por email o teléfono
+            if (users) {
+                for (const [id, user] of Object.entries(users)) {
+                    if (user.email === email || user.phone === phone) {
+                        existingUserId = id;
+                        existingUserData = user;
+                        break;
+                    }
+                }
+            }
+            
+            if (existingUserId) {
+                // Usuario ya existe - recuperar acceso sin crear duplicado
+                console.log("Usuario existente encontrado:", existingUserId);
+                localStorage.setItem('sepei_user_id', existingUserId);
+                
+                // Actualizar última visita
+                database.ref('registeredUsers/' + existingUserId).update({
+                    lastVisit: new Date().toISOString(),
+                    device: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+                });
+                
+                document.getElementById('registration-overlay').remove();
+                
+                // Redirigir según el estado del usuario
+                if (existingUserData.status === 'approved') {
+                    currentUser = existingUserData;
+                    allowAccess();
+                    updateUserActivity(existingUserId);
+                } else if (existingUserData.status === 'pending') {
+                    showPendingScreen(existingUserData);
+                } else if (existingUserData.status === 'rejected') {
+                    showRejectedScreen();
+                }
+            } else {
+                // Usuario nuevo - crear registro
+                createNewUser(name, phone, email, parque, submitBtn);
+            }
+        })
+        .catch(error => {
+            console.error("Error verificando usuario:", error);
+            // Si hay error, intentar crear usuario nuevo
+            createNewUser(name, phone, email, parque, submitBtn);
+        });
+}
+
+// Función para crear un nuevo usuario
+function createNewUser(name, phone, email, parque, submitBtn) {
     const visitorId = 'user_' + phone + '_' + Date.now().toString(36);
     
     const userData = {
@@ -484,9 +543,7 @@ function submitRegistration(event) {
         device: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
     };
     
-    const submitBtn = document.querySelector('.btn-register');
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-    submitBtn.disabled = true;
     
     database.ref('registeredUsers/' + visitorId).set(userData)
         .then(() => {
