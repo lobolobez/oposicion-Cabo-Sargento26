@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SEPEI - Preparación Oposiciones Cabo/Sargento</title>
+    <title>SEPEI UNIDO - Preparación Oposiciones Cabo/Sargento</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -17,17 +18,32 @@
             display: flex !important;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(135deg, #111111 0%, #0D0D0D 100%);
             justify-content: center;
             align-items: center;
             z-index: 9998;
             flex-direction: column;
             color: white;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         body.authorized #loading-screen { display: none !important; }
-        #loading-screen i { font-size: 60px; color: #f39c12; margin-bottom: 20px; }
-        #loading-screen p { color: #95a5a6; }
+        #loading-screen .flame-logo { width: 80px; height: 80px; margin-bottom: 20px; }
+        #loading-screen h2 { 
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem; 
+            letter-spacing: 4px; 
+            margin-bottom: 5px; 
+        }
+        #loading-screen h2 span { color: #F97316; }
+        #loading-screen .tagline-loading { 
+            font-size: 0.85rem; 
+            color: #6B7280; 
+            letter-spacing: 2px; 
+            text-transform: uppercase;
+            margin-bottom: 25px; 
+        }
+        #loading-screen .loading-text { color: #9CA3AF; font-size: 0.9rem; }
+        #loading-screen .loading-text i { color: #F97316; }
         .spinner { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -35,20 +51,37 @@
 <body>
     <!-- Pantalla de carga mientras verifica -->
     <div id="loading-screen">
-        <i class="fas fa-fire-extinguisher"></i>
-        <h2>SEPEI</h2>
-        <p><i class="fas fa-spinner spinner"></i> Verificando acceso...</p>
+        <svg class="flame-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 8 C50 8, 68 28, 68 50 C68 62, 60 72, 50 76
+                     C55 68, 55 58, 48 52 C48 60, 42 66, 38 72
+                     C30 64, 28 54, 32 44 C26 52, 24 60, 26 70
+                     C18 60, 20 42, 32 30 C28 38, 30 46, 36 50
+                     C36 36, 42 20, 50 8Z"
+                  fill="#F97316" stroke="#F97316" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        <h2>SEPEI <span>UNIDO</span></h2>
+        <p class="tagline-loading">La fuerza está en la unión</p>
+        <p class="loading-text"><i class="fas fa-spinner spinner"></i> Verificando acceso...</p>
     </div>
     
     <!-- Pantalla de inicio -->
     <div id="home-screen" class="screen active">
         <div class="container">
             <header class="main-header">
+                <div class="header-top-stripe"></div>
                 <div class="logo">
-                    <i class="fas fa-fire-extinguisher"></i>
-                    <h1>SEPEI</h1>
+                    <svg class="flame-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 8 C50 8, 68 28, 68 50 C68 62, 60 72, 50 76
+                                 C55 68, 55 58, 48 52 C48 60, 42 66, 38 72
+                                 C30 64, 28 54, 32 44 C26 52, 24 60, 26 70
+                                 C18 60, 20 42, 32 30 C28 38, 30 46, 36 50
+                                 C36 36, 42 20, 50 8Z"
+                              fill="#F97316" stroke="#F97316" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    <h1>SEPEI <span class="accent">UNIDO</span></h1>
                 </div>
-                <p class="subtitle">Preparación Oposiciones</p>
+                <p class="subtitle">Preparación Oposiciones Cabo/Sargento</p>
+                <p class="tagline">La fuerza está en la unión</p>
             </header>
 
             <div class="category-selection">
@@ -474,6 +507,35 @@
             </div>
         </div>
     </div>
+
+    <!-- Footer SEPEI UNIDO -->
+    <footer class="main-footer">
+        <div class="footer-accent"></div>
+        <div class="footer-content">
+            <div class="footer-logo">
+                <svg class="flame-sm" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 8 C50 8, 68 28, 68 50 C68 62, 60 72, 50 76
+                             C55 68, 55 58, 48 52 C48 60, 42 66, 38 72
+                             C30 64, 28 54, 32 44 C26 52, 24 60, 26 70
+                             C18 60, 20 42, 32 30 C28 38, 30 46, 36 50
+                             C36 36, 42 20, 50 8Z"
+                          fill="#F97316"/>
+                </svg>
+                <div class="footer-brand">
+                    <span class="brand-name">SEPEI <span>UNIDO</span></span>
+                    <span class="brand-sub">Movimiento Asindical</span>
+                </div>
+            </div>
+            <div class="footer-links">
+                <a href="https://www.sepeiunido.org" target="_blank"><i class="fas fa-globe"></i> sepeiunido.org</a>
+                <a href="mailto:sepeiunido@gmail.com"><i class="fas fa-envelope"></i> sepeiunido@gmail.com</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 <strong>SEPEI UNIDO</strong> · Todos los derechos reservados</span>
+            <span class="footer-disclaimer">Sin afiliación política ni sindical</span>
+        </div>
+    </footer>
 
     <script src="js/questions-cabo.js"></script>
     <script src="js/questions-sargento.js"></script>

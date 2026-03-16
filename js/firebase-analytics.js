@@ -41,8 +41,17 @@ function initFirebase() {
     console.log("=== INIT FIREBASE ===");
     console.log("URL:", window.location.href);
     
-    // PRIMERO: Verificar si quiere acceder como admin
+    // DEBUG: Saltar verificación para desarrollo
     const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('dev')) {
+        console.log("MODO DESARROLLO - Saltando verificación");
+        document.body.classList.add('authorized');
+        // Mostrar disclaimer también en modo dev
+        setTimeout(() => showDonationDisclaimer(), 500);
+        return;
+    }
+    
+    // PRIMERO: Verificar si quiere acceder como admin
     const wantsAdmin = urlParams.has('admin');
     
     console.log("wantsAdmin:", wantsAdmin);
@@ -309,8 +318,15 @@ function showRegistrationForm() {
         <div class="registration-overlay" id="registration-overlay">
             <div class="registration-container">
                 <div class="registration-header">
-                    <i class="fas fa-fire-extinguisher"></i>
-                    <h1>SEPEI</h1>
+                    <svg class="flame-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 8 C50 8, 68 28, 68 50 C68 62, 60 72, 50 76
+                                 C55 68, 55 58, 48 52 C48 60, 42 66, 38 72
+                                 C30 64, 28 54, 32 44 C26 52, 24 60, 26 70
+                                 C18 60, 20 42, 32 30 C28 38, 30 46, 36 50
+                                 C36 36, 42 20, 50 8Z"
+                              fill="#F97316" stroke="#F97316" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    <h1>SEPEI <span>UNIDO</span></h1>
                     <p>Registro de Acceso</p>
                 </div>
                 
@@ -373,6 +389,17 @@ function showPendingScreen(userData) {
     const pendingHTML = `
         <div class="registration-overlay" id="registration-overlay">
             <div class="registration-container pending">
+                <div class="registration-header">
+                    <svg class="flame-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 8 C50 8, 68 28, 68 50 C68 62, 60 72, 50 76
+                                 C55 68, 55 58, 48 52 C48 60, 42 66, 38 72
+                                 C30 64, 28 54, 32 44 C26 52, 24 60, 26 70
+                                 C18 60, 20 42, 32 30 C28 38, 30 46, 36 50
+                                 C36 36, 42 20, 50 8Z"
+                              fill="#F97316" stroke="#F97316" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    <h1>SEPEI <span>UNIDO</span></h1>
+                </div>
                 <div class="pending-icon">
                     <i class="fas fa-clock"></i>
                 </div>
@@ -405,6 +432,17 @@ function showRejectedScreen() {
     const rejectedHTML = `
         <div class="registration-overlay" id="registration-overlay">
             <div class="registration-container rejected">
+                <div class="registration-header">
+                    <svg class="flame-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 8 C50 8, 68 28, 68 50 C68 62, 60 72, 50 76
+                                 C55 68, 55 58, 48 52 C48 60, 42 66, 38 72
+                                 C30 64, 28 54, 32 44 C26 52, 24 60, 26 70
+                                 C18 60, 20 42, 32 30 C28 38, 30 46, 36 50
+                                 C36 36, 42 20, 50 8Z"
+                              fill="#F97316" stroke="#F97316" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    <h1>SEPEI <span>UNIDO</span></h1>
+                </div>
                 <div class="rejected-icon">
                     <i class="fas fa-times-circle"></i>
                 </div>
@@ -588,6 +626,210 @@ function allowAccess() {
     // Remover overlay si existe
     const overlay = document.getElementById('registration-overlay');
     if (overlay) overlay.remove();
+    
+    // Mostrar disclaimer de donación (solo una vez)
+    showDonationDisclaimer();
+}
+
+// ============================================
+// DISCLAIMER DE DONACIÓN
+// ============================================
+
+function showDonationDisclaimer() {
+    // Verificar si ya se mostró
+    // DEBUG: Descomentar la siguiente línea para forzar que se muestre siempre
+    localStorage.removeItem('sepei_donation_disclaimer_shown');
+    
+    if (localStorage.getItem('sepei_donation_disclaimer_shown')) {
+        return;
+    }
+    
+    const disclaimerHTML = `
+        <div class="donation-disclaimer-overlay" id="donation-disclaimer">
+            <div class="donation-disclaimer-container">
+                <div class="donation-header">
+                    <svg class="flame-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 8 C50 8, 68 28, 68 50 C68 62, 60 72, 50 76
+                                 C55 68, 55 58, 48 52 C48 60, 42 66, 38 72
+                                 C30 64, 28 54, 32 44 C26 52, 24 60, 26 70
+                                 C18 60, 20 42, 32 30 C28 38, 30 46, 36 50
+                                 C36 36, 42 20, 50 8Z"
+                              fill="#F97316" stroke="#F97316" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    <h2>¡Bienvenido a <span>SEPEI UNIDO</span>!</h2>
+                </div>
+                <div class="donation-content">
+                    <p>Si crees que la App cumple tus expectativas, puedes hacer un <strong>donativo totalmente voluntario</strong> para que en la Plataforma <strong>SEPEI Unido</strong> sigamos trabajando para el colectivo.</p>
+                    <div class="donation-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="bizum-badge">
+                        <span>Colabora con</span>
+                        <span class="bizum-text">bizum</span>
+                    </div>
+                    <p class="donation-subtext">Tu apoyo nos ayuda a seguir mejorando</p>
+                    <p class="donation-thanks">¡Gracias por tu colaboración!</p>
+                </div>
+                <div class="donation-actions">
+                    <button class="btn-donation-later" onclick="closeDonationDisclaimer()">
+                        <i class="fas fa-arrow-right"></i> Continuar a la App
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    addDonationDisclaimerStyles();
+    document.body.insertAdjacentHTML('beforeend', disclaimerHTML);
+}
+
+function closeDonationDisclaimer() {
+    localStorage.setItem('sepei_donation_disclaimer_shown', 'true');
+    const disclaimer = document.getElementById('donation-disclaimer');
+    if (disclaimer) {
+        disclaimer.classList.add('fade-out');
+        setTimeout(() => disclaimer.remove(), 300);
+    }
+}
+
+function addDonationDisclaimerStyles() {
+    if (document.getElementById('donation-disclaimer-styles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'donation-disclaimer-styles';
+    styles.textContent = `
+        .donation-disclaimer-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+        .donation-disclaimer-overlay.fade-out {
+            animation: fadeOut 0.3s ease forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .donation-disclaimer-container {
+            background: linear-gradient(135deg, #111111 0%, #1a1a2e 100%);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            border: 2px solid rgba(249, 115, 22, 0.3);
+            border-top: 4px solid #F97316;
+            box-shadow: 0 20px 60px rgba(249, 115, 22, 0.2);
+        }
+        .donation-header {
+            margin-bottom: 25px;
+        }
+        .donation-header .flame-logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 15px;
+        }
+        .donation-header h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+        .donation-header h2 span {
+            color: #F97316;
+        }
+        .donation-content {
+            margin-bottom: 30px;
+        }
+        .donation-content p {
+            color: #9CA3AF;
+            font-size: 1rem;
+            line-height: 1.7;
+            font-family: 'Barlow', sans-serif;
+        }
+        .donation-content strong {
+            color: #F97316;
+        }
+        .donation-icon {
+            margin: 25px 0 15px 0;
+        }
+        .donation-icon i {
+            font-size: 3rem;
+            color: #F97316;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .bizum-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px auto 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            width: fit-content;
+        }
+        .bizum-badge span {
+            font-size: 0.85rem;
+            color: #555;
+            font-weight: 600;
+        }
+        .bizum-text {
+            color: #02C2C7 !important;
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            font-family: Arial, sans-serif !important;
+            letter-spacing: -0.5px !important;
+        }
+        .donation-subtext {
+            font-size: 0.85rem !important;
+            color: #6B7280 !important;
+            font-style: italic;
+        }
+        .donation-thanks {
+            font-size: 1rem !important;
+            color: #02C2C7 !important;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .donation-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn-donation-later {
+            padding: 14px 30px;
+            background: linear-gradient(135deg, #F97316, #EA580C);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Barlow', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-donation-later:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(249, 115, 22, 0.4);
+        }
+    `;
+    document.head.appendChild(styles);
 }
 
 // Variable para tracking de tiempo
@@ -1209,10 +1451,12 @@ function addRegistrationStyles() {
     const styles = document.createElement('style');
     styles.id = 'registration-styles';
     styles.textContent = `
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap');
+        
         .registration-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background: linear-gradient(135deg, #111111 0%, #0D0D0D 100%);
             z-index: 9999;
             display: flex;
             justify-content: center;
@@ -1221,14 +1465,15 @@ function addRegistrationStyles() {
             overflow-y: auto;
         }
         .registration-container {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
+            border-radius: 16px;
             padding: 40px;
             max-width: 450px;
             width: 100%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(249, 115, 22, 0.2);
+            border-top: 3px solid #F97316;
             margin: auto;
         }
         .registration-header {
@@ -1236,69 +1481,79 @@ function addRegistrationStyles() {
             margin-bottom: 30px;
             color: white;
         }
-        .registration-header i {
-            font-size: 50px;
-            color: #f39c12;
-            margin-bottom: 10px;
+        .registration-header .flame-logo {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 15px;
         }
         .registration-header h1 {
-            font-size: 28px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            letter-spacing: 3px;
             margin: 10px 0 5px;
         }
+        .registration-header h1 span {
+            color: #F97316;
+        }
         .registration-header p {
-            color: #95a5a6;
-            font-size: 14px;
+            color: #6B7280;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
         .form-group {
             margin-bottom: 20px;
         }
         .form-group label {
             display: block;
-            color: #bdc3c7;
+            color: #9CA3AF;
             margin-bottom: 8px;
             font-size: 14px;
+            font-family: 'Barlow', sans-serif;
         }
         .form-group label i {
             margin-right: 8px;
-            color: #f39c12;
+            color: #F97316;
         }
         .form-group input, .form-group select {
             width: 100%;
             padding: 14px 16px;
-            border: 2px solid rgba(255,255,255,0.1);
+            border: 2px solid rgba(249, 115, 22, 0.2);
             border-radius: 10px;
             background: rgba(255,255,255,0.05);
             color: white;
             font-size: 16px;
+            font-family: 'Barlow', sans-serif;
             transition: all 0.3s;
             box-sizing: border-box;
         }
         .form-group input:focus, .form-group select:focus {
             outline: none;
-            border-color: #f39c12;
-            background: rgba(255,255,255,0.1);
+            border-color: #F97316;
+            background: rgba(249, 115, 22, 0.1);
         }
-        .form-group input::placeholder { color: #7f8c8d; }
+        .form-group input::placeholder { color: #6B7280; }
         .form-group select option {
-            background: #1a1a2e;
+            background: #111111;
             color: white;
         }
         .btn-register {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, #f39c12, #e67e22);
+            background: linear-gradient(135deg, #F97316, #EA580C);
             border: none;
             border-radius: 10px;
             color: white;
             font-size: 16px;
             font-weight: 600;
+            font-family: 'Barlow', sans-serif;
             cursor: pointer;
             transition: all 0.3s;
             margin-top: 10px;
         }
         .btn-register:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(243, 156, 18, 0.4);
+            box-shadow: 0 10px 30px rgba(249, 115, 22, 0.4);
         }
         .btn-register:disabled {
             opacity: 0.7;

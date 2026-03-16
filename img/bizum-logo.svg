@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60">
+  <!-- Círculo superior -->
+  <circle cx="18" cy="10" r="7" fill="#00C2C7"/>
+  <!-- Línea diagonal 1 -->
+  <line x1="10" y1="18" x2="30" y2="42" stroke="#00C2C7" stroke-width="14" stroke-linecap="round"/>
+  <!-- Línea diagonal 2 -->
+  <line x1="26" y1="18" x2="46" y2="42" stroke="#00C2C7" stroke-width="14" stroke-linecap="round"/>
+  <!-- Círculo inferior -->
+  <circle cx="54" cy="50" r="7" fill="#00C2C7"/>
+  <!-- Texto bizum -->
+  <text x="75" y="45" font-family="Arial, sans-serif" font-size="38" font-weight="bold" fill="#00C2C7">bizum</text>
+</svg>

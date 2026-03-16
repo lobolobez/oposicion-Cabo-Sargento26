@@ -40,6 +40,9 @@ const AppState = {
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
+    // DEBUG: Autorizar temporalmente para desarrollo
+    document.body.classList.add('authorized');
+    
     loadStats();
     updateHomeStats();
     initEventListeners();
