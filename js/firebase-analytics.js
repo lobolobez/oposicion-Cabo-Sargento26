@@ -46,8 +46,6 @@ function initFirebase() {
     if (urlParams.has('dev')) {
         console.log("MODO DESARROLLO - Saltando verificación");
         document.body.classList.add('authorized');
-        // Mostrar disclaimer también en modo dev
-        setTimeout(() => showDonationDisclaimer(), 500);
         return;
     }
     
@@ -330,48 +328,56 @@ function showRegistrationForm() {
                     <p>Registro de Acceso</p>
                 </div>
                 
-                <form id="registration-form" onsubmit="submitRegistration(event)">
+                <form id="registration-form" onsubmit="showDisclaimerModal(event)">
                     <div class="form-group">
                         <label for="reg-name">
-                            <i class="fas fa-user"></i> Nombre completo
+                            <i class="fas fa-user"></i> Nombre completo <span class="required-asterisk">*</span>
                         </label>
-                        <input type="text" id="reg-name" required placeholder="Tu nombre y apellidos">
+                        <input type="text" id="reg-name" required placeholder="Ej: Juan García López" minlength="5" maxlength="100">
+                        <span class="field-hint">Introduce tu nombre y apellidos reales (mínimo 5 caracteres)</span>
+                        <span class="field-error" id="name-error"></span>
                     </div>
                     
                     <div class="form-group">
                         <label for="reg-phone">
-                            <i class="fas fa-phone"></i> Teléfono móvil
+                            <i class="fas fa-phone"></i> Teléfono móvil <span class="required-asterisk">*</span>
                         </label>
-                        <input type="tel" id="reg-phone" required placeholder="612 345 678" 
-                               pattern="[0-9]{9}" title="Introduce 9 dígitos">
+                        <input type="tel" id="reg-phone" required placeholder="Ej: 612345678" 
+                               pattern="[0-9]{9}" title="Introduce exactamente 9 dígitos" maxlength="9">
+                        <span class="field-hint">Teléfono de contacto válido (9 dígitos sin espacios)</span>
+                        <span class="field-error" id="phone-error"></span>
                     </div>
                     
                     <div class="form-group">
                         <label for="reg-email">
-                            <i class="fas fa-envelope"></i> Correo electrónico
+                            <i class="fas fa-envelope"></i> Correo electrónico <span class="required-asterisk">*</span>
                         </label>
-                        <input type="email" id="reg-email" required placeholder="tu@email.com">
+                        <input type="email" id="reg-email" required placeholder="Ej: tu.nombre@email.com">
+                        <span class="field-hint">Email real al que tengas acceso</span>
+                        <span class="field-error" id="email-error"></span>
                     </div>
                     
                     <div class="form-group">
                         <label for="reg-parque">
-                            <i class="fas fa-building"></i> Parque SEPEI
+                            <i class="fas fa-building"></i> Parque SEPEI <span class="required-asterisk">*</span>
                         </label>
                         <select id="reg-parque" required>
-                            <option value="">Selecciona tu parque</option>
+                            <option value="">-- Selecciona tu parque --</option>
                             ${PARQUES_SEPEI.map(p => `<option value="${p}">${p}</option>`).join('')}
                         </select>
+                        <span class="field-hint">Selecciona el parque donde trabajas</span>
+                        <span class="field-error" id="parque-error"></span>
                     </div>
                     
                     <button type="submit" class="btn-register">
-                        <i class="fas fa-paper-plane"></i> Solicitar Acceso
+                        <i class="fas fa-arrow-right"></i> Continuar
                     </button>
                 </form>
                 
                 <p class="registration-note">
                     <i class="fas fa-info-circle"></i>
                     Tu solicitud será revisada por un administrador.
-                    Recibirás acceso una vez aprobada.
+                    Recibirás acceso una vez aprobada y verificados tus datos.
                 </p>
             </div>
         </div>
@@ -476,25 +482,68 @@ function validateEmail(email) {
     return emailRegex.test(email);
 }
 
-function showEmailError(message) {
-    let errorDiv = document.getElementById('email-error');
-    if (!errorDiv) {
-        errorDiv = document.createElement('div');
-        errorDiv.id = 'email-error';
-        errorDiv.style.cssText = 'color: #e74c3c; font-size: 12px; margin-top: 5px;';
-        document.getElementById('reg-email').parentNode.appendChild(errorDiv);
+function validateName(name) {
+    // El nombre debe tener al menos 5 caracteres y contener al menos un espacio (nombre y apellido)
+    if (name.length < 5) return false;
+    // Debe contener al menos letras
+    if (!/[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]/.test(name)) return false;
+    // No debe ser solo números
+    if (/^[0-9\s]+$/.test(name)) return false;
+    // No debe contener caracteres especiales extraños
+    if (/[<>{}\[\]\\"\';]/.test(name)) return false;
+    return true;
+}
+
+function validatePhone(phone) {
+    // El teléfono debe ser exactamente 9 dígitos y empezar por 6, 7 o 9
+    const phoneClean = phone.replace(/\s/g, '');
+    if (!/^[679][0-9]{8}$/.test(phoneClean)) return false;
+    // No debe ser un número repetitivo
+    if (/^(\d)\1{8}$/.test(phoneClean)) return false;
+    return true;
+}
+
+function showFieldError(fieldId, message) {
+    const errorSpan = document.getElementById(fieldId + '-error');
+    if (errorSpan) {
+        errorSpan.textContent = message;
+        errorSpan.style.display = 'block';
     }
-    errorDiv.textContent = message;
+    const input = document.getElementById('reg-' + fieldId);
+    if (input) {
+        input.classList.add('input-error');
+    }
+}
+
+function clearFieldError(fieldId) {
+    const errorSpan = document.getElementById(fieldId + '-error');
+    if (errorSpan) {
+        errorSpan.textContent = '';
+        errorSpan.style.display = 'none';
+    }
+    const input = document.getElementById('reg-' + fieldId);
+    if (input) {
+        input.classList.remove('input-error');
+    }
+}
+
+function clearAllErrors() {
+    ['name', 'phone', 'email', 'parque', 'confirm', 'privacy'].forEach(field => clearFieldError(field));
+}
+
+function showEmailError(message) {
+    showFieldError('email', message);
 }
 
 function clearEmailError() {
-    const errorDiv = document.getElementById('email-error');
-    if (errorDiv) {
-        errorDiv.textContent = '';
-    }
+    clearFieldError('email');
 }
 
-function submitRegistration(event) {
+// Variable temporal para almacenar datos del formulario
+let pendingRegistrationData = null;
+
+// Función para mostrar el modal de disclaimers después de validar el formulario
+function showDisclaimerModal(event) {
     event.preventDefault();
     
     const name = document.getElementById('reg-name').value.trim();
@@ -502,17 +551,264 @@ function submitRegistration(event) {
     const email = document.getElementById('reg-email').value.trim().toLowerCase();
     const parque = document.getElementById('reg-parque').value;
     
-    // Validar formato de email
-    if (!validateEmail(email)) {
-        showEmailError('Por favor, introduce un email válido (ej: nombre@dominio.com)');
-        document.getElementById('reg-email').focus();
+    // Limpiar errores anteriores
+    clearAllErrors();
+    
+    let hasErrors = false;
+    
+    // Validar nombre
+    if (!name) {
+        showFieldError('name', 'El nombre es obligatorio');
+        hasErrors = true;
+    } else if (!validateName(name)) {
+        showFieldError('name', 'Introduce tu nombre y apellidos reales (mínimo 5 caracteres, sin caracteres especiales)');
+        hasErrors = true;
+    }
+    
+    // Validar teléfono
+    if (!phone) {
+        showFieldError('phone', 'El teléfono es obligatorio');
+        hasErrors = true;
+    } else if (!validatePhone(phone)) {
+        showFieldError('phone', 'Introduce un número de móvil español válido (9 dígitos, comenzando por 6, 7 o 9)');
+        hasErrors = true;
+    }
+    
+    // Validar email
+    if (!email) {
+        showFieldError('email', 'El email es obligatorio');
+        hasErrors = true;
+    } else if (!validateEmail(email)) {
+        showFieldError('email', 'Introduce un email válido (ej: nombre@dominio.com)');
+        hasErrors = true;
+    }
+    
+    // Validar parque
+    if (!parque) {
+        showFieldError('parque', 'Debes seleccionar tu parque SEPEI');
+        hasErrors = true;
+    }
+    
+    // Si hay errores, no continuar
+    if (hasErrors) {
+        const firstError = document.querySelector('.field-error[style*="block"]');
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         return;
     }
-    clearEmailError();
     
-    const submitBtn = document.querySelector('.btn-register');
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+    // Guardar datos temporalmente
+    pendingRegistrationData = { name, phone, email, parque };
+    
+    // Mostrar modal de disclaimers
+    const disclaimerModalHTML = `
+        <div class="disclaimer-modal-overlay" id="disclaimer-modal">
+            <div class="disclaimer-modal">
+                <div class="disclaimer-modal-header">
+                    <i class="fas fa-file-contract"></i>
+                    <h2>Términos y Condiciones</h2>
+                    <p>Antes de completar tu solicitud, lee y acepta los siguientes términos:</p>
+                </div>
+                
+                <div class="disclaimer-modal-body">
+                    <!-- Resumen de datos introducidos -->
+                    <div class="data-summary">
+                        <h4><i class="fas fa-user-check"></i> Datos de tu solicitud:</h4>
+                        <ul>
+                            <li><strong>Nombre:</strong> ${name}</li>
+                            <li><strong>Teléfono:</strong> ${phone}</li>
+                            <li><strong>Email:</strong> ${email}</li>
+                            <li><strong>Parque:</strong> ${parque}</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Disclaimer 1: Veracidad de datos -->
+                    <div class="disclaimer-summary disclaimer-warning-summary">
+                        <div class="disclaimer-summary-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="disclaimer-summary-content">
+                            <h4>Veracidad de los datos</h4>
+                            <p>Los datos proporcionados deben ser <strong>reales y verificables</strong>. No se autorizará el acceso a usuarios con datos falsos o inventados.</p>
+                            <a href="#" onclick="showFullDisclaimer('datos'); return false;" class="read-more-link">
+                                <i class="fas fa-external-link-alt"></i> Leer aviso completo
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Disclaimer 2: Protección de datos -->
+                    <div class="disclaimer-summary disclaimer-privacy-summary">
+                        <div class="disclaimer-summary-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="disclaimer-summary-content">
+                            <h4>Protección de datos personales</h4>
+                            <p>Tus datos serán tratados por SEPEI UNIDO únicamente para gestionar el acceso a la plataforma. Puedes ejercer tus derechos ARCO en cualquier momento.</p>
+                            <a href="#" onclick="showFullDisclaimer('privacidad'); return false;" class="read-more-link">
+                                <i class="fas fa-external-link-alt"></i> Leer política completa
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Checkboxes de aceptación -->
+                    <div class="disclaimer-checkboxes">
+                        <label class="disclaimer-checkbox-label">
+                            <input type="checkbox" id="accept-datos">
+                            <span class="disclaimer-checkmark"></span>
+                            <span>Confirmo que los datos introducidos son <strong>reales y verídicos</strong></span>
+                        </label>
+                        <span class="disclaimer-check-error" id="datos-check-error"></span>
+                        
+                        <label class="disclaimer-checkbox-label">
+                            <input type="checkbox" id="accept-privacidad">
+                            <span class="disclaimer-checkmark"></span>
+                            <span>He leído y acepto la <strong>política de protección de datos</strong></span>
+                        </label>
+                        <span class="disclaimer-check-error" id="privacidad-check-error"></span>
+                    </div>
+                </div>
+                
+                <div class="disclaimer-modal-footer">
+                    <button class="btn-disclaimer-back" onclick="closeDisclaimerModal()">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </button>
+                    <button class="btn-disclaimer-submit" onclick="submitFromDisclaimer()">
+                        <i class="fas fa-paper-plane"></i> Enviar Solicitud
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', disclaimerModalHTML);
+}
+
+// Función para mostrar el disclaimer completo
+function showFullDisclaimer(type) {
+    let title, content;
+    
+    if (type === 'datos') {
+        title = 'AVISO: DATOS OBLIGATORIOS';
+        content = `
+            <p>Todos los campos del formulario de registro son <strong>obligatorios</strong> y deben contener <strong>información real y verificable</strong>.</p>
+            
+            <p><strong>⚠️ IMPORTANTE:</strong></p>
+            <ul>
+                <li>Los datos proporcionados serán verificados por un administrador antes de conceder el acceso.</li>
+                <li>No se autorizará el acceso a ningún usuario con datos incompletos, falsos o inventados.</li>
+                <li>El nombre debe coincidir con tu identidad real.</li>
+                <li>El teléfono y email deben ser medios de contacto reales y activos.</li>
+                <li>El parque SEPEI indicado debe ser aquel donde actualmente prestas servicio.</li>
+            </ul>
+            
+            <p>La finalidad de estos requisitos es garantizar que la plataforma de estudio sea utilizada exclusivamente por personal del SEPEI de la Diputación de Albacete.</p>
+            
+            <p>El incumplimiento de estas condiciones resultará en la denegación inmediata del acceso y la eliminación de los datos proporcionados.</p>
+        `;
+    } else {
+        title = 'POLÍTICA DE PROTECCIÓN DE DATOS PERSONALES';
+        content = `
+            <p><strong>1. Responsable del tratamiento:</strong><br>
+            SEPEI UNIDO (Movimiento Asindical)<br>
+            Email de contacto: <a href="mailto:sepeiunido@gmail.com">sepeiunido@gmail.com</a></p>
+            
+            <p><strong>2. Finalidad del tratamiento:</strong><br>
+            Los datos personales recogidos serán utilizados para:<br>
+            - Gestionar el acceso a la plataforma de estudio para oposiciones.<br>
+            - Verificar que los usuarios pertenecen al colectivo SEPEI de la Diputación de Albacete.<br>
+            - Enviar comunicaciones relacionadas con la plataforma (opcional).</p>
+            
+            <p><strong>3. Legitimación:</strong><br>
+            El tratamiento de tus datos se basa en el consentimiento que prestas al aceptar estos términos.</p>
+            
+            <p><strong>4. Destinatarios:</strong><br>
+            Los datos no serán cedidos a terceros, salvo obligación legal. Los datos se almacenan en servidores de Firebase (Google) ubicados en la Unión Europea.</p>
+            
+            <p><strong>5. Derechos del interesado:</strong><br>
+            Puedes ejercer tus derechos de acceso, rectificación, supresión, limitación del tratamiento, portabilidad y oposición escribiendo a <a href="mailto:sepeiunido@gmail.com">sepeiunido@gmail.com</a>, indicando en el asunto "Protección de Datos".</p>
+            
+            <p><strong>6. Conservación de datos:</strong><br>
+            Los datos se conservarán mientras el usuario mantenga acceso a la plataforma o hasta que solicite su eliminación.</p>
+            
+            <p><strong>7. Medidas de seguridad:</strong><br>
+            Se han adoptado las medidas técnicas y organizativas necesarias para garantizar la seguridad de los datos personales.</p>
+        `;
+    }
+    
+    const fullDisclaimerHTML = `
+        <div class="full-disclaimer-overlay" id="full-disclaimer-modal">
+            <div class="full-disclaimer-modal">
+                <div class="full-disclaimer-header">
+                    <h3>${title}</h3>
+                    <button class="btn-close-disclaimer" onclick="closeFullDisclaimer()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="full-disclaimer-content">
+                    ${content}
+                </div>
+                <div class="full-disclaimer-footer">
+                    <button class="btn-understood" onclick="closeFullDisclaimer()">
+                        <i class="fas fa-check"></i> Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', fullDisclaimerHTML);
+}
+
+function closeFullDisclaimer() {
+    const modal = document.getElementById('full-disclaimer-modal');
+    if (modal) modal.remove();
+}
+
+function closeDisclaimerModal() {
+    const modal = document.getElementById('disclaimer-modal');
+    if (modal) modal.remove();
+    pendingRegistrationData = null;
+}
+
+function submitFromDisclaimer() {
+    const acceptDatos = document.getElementById('accept-datos').checked;
+    const acceptPrivacidad = document.getElementById('accept-privacidad').checked;
+    
+    // Limpiar errores
+    document.getElementById('datos-check-error').textContent = '';
+    document.getElementById('privacidad-check-error').textContent = '';
+    
+    let hasErrors = false;
+    
+    if (!acceptDatos) {
+        document.getElementById('datos-check-error').textContent = 'Debes confirmar que los datos son reales';
+        hasErrors = true;
+    }
+    
+    if (!acceptPrivacidad) {
+        document.getElementById('privacidad-check-error').textContent = 'Debes aceptar la política de protección de datos';
+        hasErrors = true;
+    }
+    
+    if (hasErrors) return;
+    
+    // Cerrar modal y enviar
+    const submitBtn = document.querySelector('.btn-disclaimer-submit');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
     submitBtn.disabled = true;
+    
+    // Llamar a la función de envío
+    submitRegistration();
+}
+
+function submitRegistration() {
+    if (!pendingRegistrationData) {
+        console.error("No hay datos de registro pendientes");
+        return;
+    }
+    
+    const { name, phone, email, parque } = pendingRegistrationData;
     
     // PRIMERO: Buscar si ya existe un usuario con el mismo email o teléfono
     database.ref('registeredUsers').once('value')
@@ -543,6 +839,9 @@ function submitRegistration(event) {
                     device: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
                 });
                 
+                // Cerrar modales
+                const disclaimerModal = document.getElementById('disclaimer-modal');
+                if (disclaimerModal) disclaimerModal.remove();
                 document.getElementById('registration-overlay').remove();
                 
                 // Redirigir según el estado del usuario
@@ -557,18 +856,18 @@ function submitRegistration(event) {
                 }
             } else {
                 // Usuario nuevo - crear registro
-                createNewUser(name, phone, email, parque, submitBtn);
+                createNewUser(name, phone, email, parque);
             }
         })
         .catch(error => {
             console.error("Error verificando usuario:", error);
             // Si hay error, intentar crear usuario nuevo
-            createNewUser(name, phone, email, parque, submitBtn);
+            createNewUser(name, phone, email, parque);
         });
 }
 
 // Función para crear un nuevo usuario
-function createNewUser(name, phone, email, parque, submitBtn) {
+function createNewUser(name, phone, email, parque) {
     const visitorId = 'user_' + phone + '_' + Date.now().toString(36);
     
     const userData = {
@@ -580,8 +879,6 @@ function createNewUser(name, phone, email, parque, submitBtn) {
         registrationDate: new Date().toISOString(),
         device: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
     };
-    
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
     
     database.ref('registeredUsers/' + visitorId).set(userData)
         .then(() => {
@@ -597,14 +894,22 @@ function createNewUser(name, phone, email, parque, submitBtn) {
             
             database.ref('stats/totalRegistrations').transaction(count => (count || 0) + 1);
             
-            document.getElementById('registration-overlay').remove();
+            // Cerrar modales
+            const disclaimerModal = document.getElementById('disclaimer-modal');
+            if (disclaimerModal) disclaimerModal.remove();
+            const registrationOverlay = document.getElementById('registration-overlay');
+            if (registrationOverlay) registrationOverlay.remove();
+            
             showPendingScreen(userData);
         })
         .catch(error => {
             console.error("Error en registro:", error);
             alert("Error al enviar la solicitud. Inténtalo de nuevo.");
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Solicitar Acceso';
-            submitBtn.disabled = false;
+            const submitBtn = document.querySelector('.btn-disclaimer-submit');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Solicitud';
+                submitBtn.disabled = false;
+            }
         });
 }
 
@@ -626,210 +931,6 @@ function allowAccess() {
     // Remover overlay si existe
     const overlay = document.getElementById('registration-overlay');
     if (overlay) overlay.remove();
-    
-    // Mostrar disclaimer de donación (solo una vez)
-    showDonationDisclaimer();
-}
-
-// ============================================
-// DISCLAIMER DE DONACIÓN
-// ============================================
-
-function showDonationDisclaimer() {
-    // Verificar si ya se mostró
-    // DEBUG: Descomentar la siguiente línea para forzar que se muestre siempre
-    localStorage.removeItem('sepei_donation_disclaimer_shown');
-    
-    if (localStorage.getItem('sepei_donation_disclaimer_shown')) {
-        return;
-    }
-    
-    const disclaimerHTML = `
-        <div class="donation-disclaimer-overlay" id="donation-disclaimer">
-            <div class="donation-disclaimer-container">
-                <div class="donation-header">
-                    <svg class="flame-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M50 8 C50 8, 68 28, 68 50 C68 62, 60 72, 50 76
-                                 C55 68, 55 58, 48 52 C48 60, 42 66, 38 72
-                                 C30 64, 28 54, 32 44 C26 52, 24 60, 26 70
-                                 C18 60, 20 42, 32 30 C28 38, 30 46, 36 50
-                                 C36 36, 42 20, 50 8Z"
-                              fill="#F97316" stroke="#F97316" stroke-width="2" stroke-linejoin="round"/>
-                    </svg>
-                    <h2>¡Bienvenido a <span>SEPEI UNIDO</span>!</h2>
-                </div>
-                <div class="donation-content">
-                    <p>Si crees que la App cumple tus expectativas, puedes hacer un <strong>donativo totalmente voluntario</strong> para que en la Plataforma <strong>SEPEI Unido</strong> sigamos trabajando para el colectivo.</p>
-                    <div class="donation-icon">
-                        <i class="fas fa-heart"></i>
-                    </div>
-                    <div class="bizum-badge">
-                        <span>Colabora con</span>
-                        <span class="bizum-text">bizum</span>
-                    </div>
-                    <p class="donation-subtext">Tu apoyo nos ayuda a seguir mejorando</p>
-                    <p class="donation-thanks">¡Gracias por tu colaboración!</p>
-                </div>
-                <div class="donation-actions">
-                    <button class="btn-donation-later" onclick="closeDonationDisclaimer()">
-                        <i class="fas fa-arrow-right"></i> Continuar a la App
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    addDonationDisclaimerStyles();
-    document.body.insertAdjacentHTML('beforeend', disclaimerHTML);
-}
-
-function closeDonationDisclaimer() {
-    localStorage.setItem('sepei_donation_disclaimer_shown', 'true');
-    const disclaimer = document.getElementById('donation-disclaimer');
-    if (disclaimer) {
-        disclaimer.classList.add('fade-out');
-        setTimeout(() => disclaimer.remove(), 300);
-    }
-}
-
-function addDonationDisclaimerStyles() {
-    if (document.getElementById('donation-disclaimer-styles')) return;
-    
-    const styles = document.createElement('style');
-    styles.id = 'donation-disclaimer-styles';
-    styles.textContent = `
-        .donation-disclaimer-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 10000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            animation: fadeIn 0.3s ease;
-        }
-        .donation-disclaimer-overlay.fade-out {
-            animation: fadeOut 0.3s ease forwards;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-        .donation-disclaimer-container {
-            background: linear-gradient(135deg, #111111 0%, #1a1a2e 100%);
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 480px;
-            width: 100%;
-            text-align: center;
-            border: 2px solid rgba(249, 115, 22, 0.3);
-            border-top: 4px solid #F97316;
-            box-shadow: 0 20px 60px rgba(249, 115, 22, 0.2);
-        }
-        .donation-header {
-            margin-bottom: 25px;
-        }
-        .donation-header .flame-logo {
-            width: 60px;
-            height: 60px;
-            margin-bottom: 15px;
-        }
-        .donation-header h2 {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.8rem;
-            color: #fff;
-            letter-spacing: 2px;
-        }
-        .donation-header h2 span {
-            color: #F97316;
-        }
-        .donation-content {
-            margin-bottom: 30px;
-        }
-        .donation-content p {
-            color: #9CA3AF;
-            font-size: 1rem;
-            line-height: 1.7;
-            font-family: 'Barlow', sans-serif;
-        }
-        .donation-content strong {
-            color: #F97316;
-        }
-        .donation-icon {
-            margin: 25px 0 15px 0;
-        }
-        .donation-icon i {
-            font-size: 3rem;
-            color: #F97316;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        .bizum-badge {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 15px auto 20px;
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            width: fit-content;
-        }
-        .bizum-badge span {
-            font-size: 0.85rem;
-            color: #555;
-            font-weight: 600;
-        }
-        .bizum-text {
-            color: #02C2C7 !important;
-            font-size: 1.5rem !important;
-            font-weight: 700 !important;
-            font-family: Arial, sans-serif !important;
-            letter-spacing: -0.5px !important;
-        }
-        .donation-subtext {
-            font-size: 0.85rem !important;
-            color: #6B7280 !important;
-            font-style: italic;
-        }
-        .donation-thanks {
-            font-size: 1rem !important;
-            color: #02C2C7 !important;
-            font-weight: 600;
-            margin-top: 10px;
-        }
-        .donation-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .btn-donation-later {
-            padding: 14px 30px;
-            background: linear-gradient(135deg, #F97316, #EA580C);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            font-family: 'Barlow', sans-serif;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .btn-donation-later:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(249, 115, 22, 0.4);
-        }
-    `;
-    document.head.appendChild(styles);
 }
 
 // Variable para tracking de tiempo
@@ -1622,6 +1723,544 @@ function addRegistrationStyles() {
             margin-bottom: 20px;
         }
         .registration-container.rejected h2 { color: #e74c3c; }
+        
+        /* === ESTILOS PARA DISCLAIMERS === */
+        .disclaimers-section {
+            margin: 25px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .disclaimer-box {
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .disclaimer-header {
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .disclaimer-header i {
+            font-size: 16px;
+        }
+        
+        .disclaimer-content {
+            padding: 15px;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        .disclaimer-content p {
+            margin: 8px 0;
+            color: #bdc3c7;
+        }
+        
+        .disclaimer-content strong {
+            color: #ecf0f1;
+        }
+        
+        .disclaimer-content a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .disclaimer-content a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Disclaimer de Datos Obligatorios (Amarillo/Naranja) */
+        .disclaimer-warning {
+            border-color: rgba(243, 156, 18, 0.4);
+        }
+        
+        .disclaimer-warning .disclaimer-header {
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.25), rgba(230, 126, 34, 0.2));
+            color: #f39c12;
+        }
+        
+        .disclaimer-warning .disclaimer-content {
+            background: rgba(243, 156, 18, 0.08);
+        }
+        
+        .disclaimer-highlight {
+            color: #e74c3c !important;
+            font-weight: 600;
+            background: rgba(231, 76, 60, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 10px !important;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .disclaimer-highlight i {
+            color: #e74c3c;
+        }
+        
+        /* Disclaimer de Protección de Datos (Azul) */
+        .disclaimer-privacy {
+            border-color: rgba(52, 152, 219, 0.4);
+        }
+        
+        .disclaimer-privacy .disclaimer-header {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.25), rgba(41, 128, 185, 0.2));
+            color: #3498db;
+        }
+        
+        .disclaimer-privacy .disclaimer-content {
+            background: rgba(52, 152, 219, 0.08);
+        }
+        
+        .required-asterisk {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .field-hint {
+            display: block;
+            color: #6B7280;
+            font-size: 11px;
+            margin-top: 6px;
+            font-style: italic;
+        }
+        
+        .field-error {
+            display: none;
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+        
+        .form-group input.input-error,
+        .form-group select.input-error {
+            border-color: #e74c3c !important;
+            background: rgba(231, 76, 60, 0.1) !important;
+            animation: shake 0.3s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .checkbox-group {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .checkbox-label {
+            display: flex !important;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+            color: #9CA3AF !important;
+        }
+        
+        .checkbox-label input[type="checkbox"] {
+            width: auto !important;
+            height: auto;
+            margin-top: 3px;
+            flex-shrink: 0;
+            cursor: pointer;
+            accent-color: #F97316;
+        }
+        
+        .checkbox-text {
+            font-size: 12px;
+            line-height: 1.5;
+            color: #9CA3AF;
+        }
+        
+        .checkbox-text strong {
+            color: #F97316;
+        }
+        
+        /* Validación visual en tiempo real */
+        .form-group input:valid:not(:placeholder-shown),
+        .form-group select:valid:not([value=""]) {
+            border-color: rgba(46, 204, 113, 0.5);
+        }
+        
+        .form-group input:invalid:not(:placeholder-shown):not(:focus) {
+            border-color: rgba(231, 76, 60, 0.5);
+        }
+        
+        /* === ESTILOS PARA MODAL DE DISCLAIMERS === */
+        .disclaimer-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10001;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .disclaimer-modal {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            max-width: 550px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.6);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+        }
+        
+        .disclaimer-modal-header {
+            padding: 25px;
+            text-align: center;
+            background: rgba(249, 115, 22, 0.1);
+            border-bottom: 1px solid rgba(249, 115, 22, 0.2);
+        }
+        
+        .disclaimer-modal-header i {
+            font-size: 40px;
+            color: #F97316;
+            margin-bottom: 10px;
+        }
+        
+        .disclaimer-modal-header h2 {
+            color: white;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 24px;
+            letter-spacing: 2px;
+            margin: 10px 0 5px;
+        }
+        
+        .disclaimer-modal-header p {
+            color: #9CA3AF;
+            font-size: 13px;
+        }
+        
+        .disclaimer-modal-body {
+            padding: 25px;
+        }
+        
+        .data-summary {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .data-summary h4 {
+            color: #2ecc71;
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .data-summary ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .data-summary li {
+            color: #ecf0f1;
+            font-size: 13px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .data-summary li:last-child {
+            border-bottom: none;
+        }
+        
+        .data-summary strong {
+            color: #9CA3AF;
+        }
+        
+        .disclaimer-summary {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .disclaimer-summary-icon {
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+        
+        .disclaimer-summary-content h4 {
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        
+        .disclaimer-summary-content p {
+            font-size: 12px;
+            color: #bdc3c7;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .read-more-link {
+            font-size: 12px;
+            color: #3498db;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.3s;
+        }
+        
+        .read-more-link:hover {
+            color: #5dade2;
+            text-decoration: underline;
+        }
+        
+        .disclaimer-warning-summary {
+            background: rgba(243, 156, 18, 0.1);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+        }
+        
+        .disclaimer-warning-summary .disclaimer-summary-icon {
+            color: #f39c12;
+        }
+        
+        .disclaimer-warning-summary h4 {
+            color: #f39c12;
+        }
+        
+        .disclaimer-privacy-summary {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+        
+        .disclaimer-privacy-summary .disclaimer-summary-icon {
+            color: #3498db;
+        }
+        
+        .disclaimer-privacy-summary h4 {
+            color: #3498db;
+        }
+        
+        .disclaimer-checkboxes {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .disclaimer-checkbox-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            color: #bdc3c7;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .disclaimer-checkbox-label input[type="checkbox"] {
+            margin-top: 3px;
+            flex-shrink: 0;
+            accent-color: #F97316;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .disclaimer-checkbox-label strong {
+            color: #F97316;
+        }
+        
+        .disclaimer-check-error {
+            display: block;
+            color: #e74c3c;
+            font-size: 11px;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            margin-left: 30px;
+        }
+        
+        .disclaimer-modal-footer {
+            padding: 20px 25px;
+            display: flex;
+            gap: 15px;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .btn-disclaimer-back {
+            padding: 14px 25px;
+            background: #7f8c8d;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.3s;
+        }
+        
+        .btn-disclaimer-back:hover {
+            background: #95a5a6;
+        }
+        
+        .btn-disclaimer-submit {
+            padding: 14px 25px;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .btn-disclaimer-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
+        }
+        
+        .btn-disclaimer-submit:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* === MODAL DE DISCLAIMER COMPLETO === */
+        .full-disclaimer-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10002;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .full-disclaimer-modal {
+            background: #1a1a2e;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 85vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(249, 115, 22, 0.3);
+        }
+        
+        .full-disclaimer-header {
+            padding: 20px;
+            background: rgba(249, 115, 22, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(249, 115, 22, 0.2);
+        }
+        
+        .full-disclaimer-header h3 {
+            color: #F97316;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .btn-close-disclaimer {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        
+        .btn-close-disclaimer:hover {
+            background: rgba(231, 76, 60, 0.3);
+        }
+        
+        .full-disclaimer-content {
+            padding: 25px;
+            overflow-y: auto;
+            flex: 1;
+            color: #bdc3c7;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        
+        .full-disclaimer-content p {
+            margin-bottom: 15px;
+        }
+        
+        .full-disclaimer-content strong {
+            color: #ecf0f1;
+        }
+        
+        .full-disclaimer-content ul {
+            margin: 10px 0 15px 20px;
+        }
+        
+        .full-disclaimer-content li {
+            margin-bottom: 8px;
+        }
+        
+        .full-disclaimer-content a {
+            color: #3498db;
+        }
+        
+        .full-disclaimer-footer {
+            padding: 15px 25px;
+            background: rgba(0,0,0,0.2);
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .btn-understood {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #F97316, #EA580C);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .btn-understood:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+        }
     `;
     document.head.appendChild(styles);
 }
